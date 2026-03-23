@@ -1,0 +1,8 @@
+* @yourgithub
+
+/server/ @yourgithub @memberA
+/client/ @yourgithub @memberB
+/shared/ @yourgithub @memberA @memberB
+
+/.github/ @yourgithub
+/docs/ @yourgithub
