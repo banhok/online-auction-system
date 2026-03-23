@@ -1,0 +1,1 @@
+shared = model, DTO, class dùng chung giữa client và server
