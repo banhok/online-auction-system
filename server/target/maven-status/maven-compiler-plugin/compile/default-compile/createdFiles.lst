@@ -1,0 +1,11 @@
+com\onlineauction\server\ServerApp.class
+com\onlineauction\server\repository\BidRepository.class
+com\onlineauction\server\service\AuctionService.class
+com\onlineauction\server\network\ClientHandler.class
+com\onlineauction\server\service\AuthService.class
+com\onlineauction\server\repository\ProductRepository.class
+com\onlineauction\server\controller\RequestDispatcher.class
+com\onlineauction\server\exception\BusinessException.class
+com\onlineauction\server\repository\UserRepository.class
+com\onlineauction\server\network\AuctionServer.class
+com\onlineauction\server\service\ProductService.class
