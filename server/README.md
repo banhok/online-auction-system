@@ -1,1 +1,0 @@
-server = phần xử lý server, socket, auction logic

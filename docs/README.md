@@ -1,1 +1,0 @@
-docs = tài liệu, sơ đồ, phân công, note
