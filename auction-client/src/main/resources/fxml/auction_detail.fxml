@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.AuctionDetailController"
+            styleClass="dashboard-container">
+
+    <!-- TOP -->
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+            <Button fx:id="btnBack" text="← Quay lại" onAction="#handleBack" styleClass="btn-secondary"/>
+            <Label fx:id="lblAuctionId" text="Phiên #0" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblStatus" text="RUNNING" styleClass="status-badge"/>
+        </HBox>
+    </top>
+
+    <!-- CENTER -->
+    <center>
+        <HBox spacing="20">
+            <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+            <!-- LEFT: Thông tin + Bidding -->
+            <VBox spacing="15" prefWidth="450">
+                <!-- Thông tin sản phẩm -->
+                <VBox spacing="8" styleClass="info-card">
+                    <Label fx:id="lblItemName" text="Item #0" styleClass="item-title"/>
+                    <Label fx:id="lblItemDetails" text="" styleClass="info-text" wrapText="true"/>
+                    <Label fx:id="lblStartingPrice" text="Giá khởi điểm: 0"/>
+                    <Label fx:id="lblExtendedBadge" text="🕒 Đã gia hạn (anti-snipe)"
+                           styleClass="badge-warning" visible="false" managed="false"/>
+                    <Separator/>
+                    <Label text="💰 Giá hiện tại" styleClass="form-label"/>
+                    <Label fx:id="lblCurrentPrice" text="0 VNĐ" styleClass="current-price"/>
+                    <Label fx:id="lblBidCount" text="0 lượt đấu giá" styleClass="bid-count"/>
+                    <Label fx:id="lblParticipantCount" text="👥 0 người tham gia" styleClass="bid-count"/>
+                </VBox>
+
+                <!-- Đồng hồ đếm ngược -->
+                <VBox spacing="5" alignment="CENTER" styleClass="info-card">
+                    <Label text="⏱ Thời gian còn lại" styleClass="form-label"/>
+                    <Label fx:id="lblCountdown" text="00:00:00" styleClass="countdown-normal"/>
+                    <Label fx:id="lblStartEndTime" text="" styleClass="info-text"/>
+                </VBox>
+
+                <!-- Đặt cọc + Đặt giá -->
+                <VBox spacing="10" styleClass="info-card">
+                    <Button fx:id="btnJoinAuction" text="🎫 Đặt cọc tham gia"
+                            onAction="#handleJoinAuction" styleClass="btn-success" maxWidth="Infinity"/>
+                    <Separator/>
+                    <Label text="Nhập giá đặt" styleClass="form-label"/>
+                    <HBox spacing="10">
+                        <TextField fx:id="txtBidAmount" promptText="Nhập số tiền..."
+                                   styleClass="form-input" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="btnPlaceBid" text="🔨 Đặt giá"
+                                onAction="#handlePlaceBid" styleClass="btn-primary"/>
+                    </HBox>
+                    <Button fx:id="btnPay" text="💳 Thanh toán" onAction="#handlePay"
+                            styleClass="btn-primary" maxWidth="Infinity"
+                            visible="false" managed="false"/>
+                </VBox>
+            </VBox>
+
+            <!-- RIGHT: Chart + Bid History -->
+            <VBox spacing="15" HBox.hgrow="ALWAYS">
+                <!-- Biểu đồ giá realtime -->
+                <VBox styleClass="info-card" VBox.vgrow="SOMETIMES">
+                    <Label text="📈 Biểu đồ giá realtime" styleClass="form-label"/>
+                    <LineChart fx:id="chartPrice" prefHeight="250" animated="false">
+                        <xAxis><NumberAxis fx:id="xAxis" label="Lượt bid" autoRanging="true"/></xAxis>
+                        <yAxis><NumberAxis fx:id="yAxis" label="Giá (VNĐ)" autoRanging="true"/></yAxis>
+                    </LineChart>
+                </VBox>
+
+                <!-- Lịch sử bid -->
+                <VBox styleClass="info-card" VBox.vgrow="ALWAYS">
+                    <Label text="📜 Lịch sử đấu giá" styleClass="form-label"/>
+                    <TableView fx:id="tableBidHistory" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colBidder" text="Người đặt" prefWidth="120"/>
+                            <TableColumn fx:id="colAmount" text="Giá đặt" prefWidth="130"/>
+                            <TableColumn fx:id="colTime" text="Thời gian" prefWidth="180"/>
+                        </columns>
+                        <placeholder><Label text="Chưa có lượt đấu giá nào"/></placeholder>
+                    </TableView>
+                </VBox>
+            </VBox>
+        </HBox>
+    </center>
+</BorderPane>
