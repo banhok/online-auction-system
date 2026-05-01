@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.SellerPanelController"
+            styleClass="dashboard-container">
+
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+            <Button fx:id="btnBack" text="← Quay lại" onAction="#handleBack" styleClass="btn-secondary"/>
+            <Label text="📦 Quản lý sản phẩm &amp; Phiên đấu giá" styleClass="section-title"/>
+        </HBox>
+    </top>
+
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <padding><Insets top="10" right="20" bottom="20" left="20"/></padding>
+
+            <!-- Tab 1: Tạo sản phẩm -->
+            <Tab text="➕ Tạo sản phẩm">
+                <ScrollPane fitToWidth="true">
+                    <VBox spacing="12" maxWidth="500">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                        <Label text="Tên sản phẩm" styleClass="form-label"/>
+                        <TextField fx:id="txtItemName" promptText="VD: iPhone 15 Pro Max" styleClass="form-input"/>
+
+                        <Label text="Mô tả" styleClass="form-label"/>
+                        <TextArea fx:id="txtDescription" promptText="Mô tả chi tiết sản phẩm..."
+                                  prefRowCount="3" styleClass="form-input"/>
+
+                        <Label text="Danh mục" styleClass="form-label"/>
+                        <ComboBox fx:id="cboCategory" maxWidth="Infinity" styleClass="form-input"/>
+
+                        <Label text="Giá khởi điểm (VNĐ)" styleClass="form-label"/>
+                        <TextField fx:id="txtStartingPrice" promptText="VD: 500000" styleClass="form-input"/>
+
+                        <Label text="URL ảnh (tùy chọn)" styleClass="form-label"/>
+                        <TextField fx:id="txtImageUrl" promptText="https://..." styleClass="form-input"/>
+
+                        <Separator/>
+                        <Label text="Thông tin chi tiết theo danh mục" styleClass="form-label" style="-fx-font-weight:bold"/>
+
+                        <Label fx:id="lblExtra1" text="Field 1:" styleClass="form-label"/>
+                        <TextField fx:id="txtExtraField1" styleClass="form-input"/>
+
+                        <Label fx:id="lblExtra2" text="Field 2:" styleClass="form-label"/>
+                        <TextField fx:id="txtExtraField2" styleClass="form-input"/>
+
+                        <Label fx:id="lblExtra3" text="Field 3:" styleClass="form-label"/>
+                        <TextField fx:id="txtExtraField3" styleClass="form-input"/>
+
+                        <Label fx:id="lblExtra4" text="Field 4:" styleClass="form-label"/>
+                        <TextField fx:id="txtExtraField4" styleClass="form-input"/>
+
+                        <Button text="✅ Tạo sản phẩm" onAction="#handleCreateItem"
+                                styleClass="btn-primary" maxWidth="Infinity"/>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+
+            <!-- Tab 2: Tạo phiên đấu giá -->
+            <Tab text="🔨 Tạo phiên đấu giá">
+                <VBox spacing="12" maxWidth="500">
+                    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                    <Label text="Sản phẩm" styleClass="form-label"/>
+                    <ComboBox fx:id="cboAuctionItem" maxWidth="Infinity"
+                              promptText="Chọn sản phẩm đã tạo" styleClass="form-input"/>
+                    <Label text="🔄 Danh sách lấy từ tab 'Sản phẩm của tôi'" styleClass="hint-label"/>
+
+                    <Label text="Giá khởi điểm (VNĐ)" styleClass="form-label"/>
+                    <TextField fx:id="txtAuctionStartPrice" promptText="VD: 500000" styleClass="form-input"/>
+
+                    <Label text="Thời gian bắt đầu" styleClass="form-label"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <DatePicker fx:id="dpStartDate" prefWidth="180" styleClass="form-input"/>
+                        <Spinner fx:id="spStartHour" prefWidth="80" editable="true"/>
+                        <Label text=":"/>
+                        <Spinner fx:id="spStartMinute" prefWidth="80" editable="true"/>
+                    </HBox>
+
+                    <Label text="Thời gian kết thúc" styleClass="form-label"/>
+                    <HBox spacing="8" alignment="CENTER_LEFT">
+                        <DatePicker fx:id="dpEndDate" prefWidth="180" styleClass="form-input"/>
+                        <Spinner fx:id="spEndHour" prefWidth="80" editable="true"/>
+                        <Label text=":"/>
+                        <Spinner fx:id="spEndMinute" prefWidth="80" editable="true"/>
+                    </HBox>
+
+                    <Button text="✅ Tạo phiên đấu giá" onAction="#handleCreateAuction"
+                            styleClass="btn-primary" maxWidth="Infinity"/>
+                </VBox>
+            </Tab>
+
+            <!-- Tab 3: Phiên đấu giá của tôi -->
+            <Tab text="📋 Phiên của tôi">
+                <VBox spacing="10">
+                    <padding><Insets top="20" right="10" bottom="10" left="10"/></padding>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="💡 Chỉ huỷ được phiên ở trạng thái OPEN hoặc RUNNING — toàn bộ cọc sẽ được hoàn cho bidder."
+                               styleClass="hint-label" wrapText="true"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="🔄 Làm mới" onAction="#handleRefreshAuctions" styleClass="btn-secondary"/>
+                    </HBox>
+                    <TableView fx:id="tableMyAuctions" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colAucItem" text="Sản phẩm" prefWidth="180"/>
+                            <TableColumn fx:id="colAucPrice" text="Giá hiện tại" prefWidth="130"/>
+                            <TableColumn fx:id="colAucBids" text="Lượt bid" prefWidth="80"/>
+                            <TableColumn fx:id="colAucStatus" text="Trạng thái" prefWidth="110"/>
+                            <TableColumn fx:id="colAucStart" text="Bắt đầu" prefWidth="160"/>
+                            <TableColumn fx:id="colAucEnd" text="Kết thúc" prefWidth="160"/>
+                            <TableColumn fx:id="colAucCancel" text="Thao tác" prefWidth="100"/>
+                        </columns>
+                        <placeholder><Label text="Bạn chưa tạo phiên đấu giá nào"/></placeholder>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <!-- Tab 4: Sản phẩm của tôi -->
+            <Tab text="📦 Sản phẩm của tôi">
+                <VBox spacing="10">
+                    <padding><Insets top="20" right="10" bottom="10" left="10"/></padding>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Danh sách sản phẩm bạn đã tạo" styleClass="form-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="🔄 Làm mới" onAction="#handleRefreshItems" styleClass="btn-secondary"/>
+                    </HBox>
+                    <TableView fx:id="tableMyItems" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colItemName" text="Tên" prefWidth="240"/>
+                            <TableColumn fx:id="colItemCategory" text="Danh mục" prefWidth="120"/>
+                            <TableColumn fx:id="colItemPrice" text="Giá khởi điểm" prefWidth="140"/>
+                            <TableColumn fx:id="colItemStatus" text="Trạng thái" prefWidth="160"/>
+                            <TableColumn fx:id="colItemAction" text="Thao tác" prefWidth="100"/>
+                        </columns>
+                        <placeholder><Label text="Bạn chưa tạo sản phẩm nào"/></placeholder>
+                    </TableView>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>
