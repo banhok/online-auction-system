@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.ProfileController"
+            styleClass="dashboard-container">
+
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+            <Button fx:id="btnBack" text="← Quay lại" onAction="#handleBack" styleClass="btn-secondary"/>
+            <Label text="👤 Tài khoản của tôi" styleClass="section-title"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true">
+            <VBox spacing="15" maxWidth="500">
+                <padding><Insets top="20" right="30" bottom="30" left="30"/></padding>
+
+                <!-- Info -->
+                <VBox spacing="8" styleClass="info-card">
+                    <Label text="Thông tin tài khoản" styleClass="form-label" style="-fx-font-weight:bold"/>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Username:" prefWidth="100"/>
+                        <Label fx:id="lblUsername" styleClass="balance-label"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Vai trò:" prefWidth="100"/>
+                        <Label fx:id="lblRole"/>
+                    </HBox>
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="Số dư:" prefWidth="100"/>
+                        <Label fx:id="lblBalance" styleClass="balance-label"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Edit profile -->
+                <VBox spacing="8" styleClass="info-card">
+                    <Label text="Chỉnh sửa thông tin" styleClass="form-label" style="-fx-font-weight:bold"/>
+                    <Label text="Họ tên" styleClass="form-label"/>
+                    <TextField fx:id="txtFullName" styleClass="form-input"/>
+                    <Label text="Email" styleClass="form-label"/>
+                    <TextField fx:id="txtEmail" styleClass="form-input"/>
+                    <Button text="💾 Lưu thay đổi" onAction="#handleUpdateProfile"
+                            styleClass="btn-primary" maxWidth="Infinity"/>
+                </VBox>
+
+                <!-- Change password -->
+                <VBox spacing="8" styleClass="info-card">
+                    <Label text="Đổi mật khẩu" styleClass="form-label" style="-fx-font-weight:bold"/>
+                    <Label text="Mật khẩu cũ" styleClass="form-label"/>
+                    <PasswordField fx:id="txtOldPassword" styleClass="form-input"/>
+                    <Label text="Mật khẩu mới" styleClass="form-label"/>
+                    <PasswordField fx:id="txtNewPassword" styleClass="form-input"/>
+                    <Label text="Xác nhận mật khẩu mới" styleClass="form-label"/>
+                    <PasswordField fx:id="txtConfirmNewPassword" styleClass="form-input"/>
+                    <Button text="🔑 Đổi mật khẩu" onAction="#handleChangePassword"
+                            styleClass="btn-success" maxWidth="Infinity"/>
+                </VBox>
+
+                <!-- Wallet history -->
+                <VBox spacing="8" styleClass="info-card">
+                    <Label text="📜 Lịch sử giao dịch ví" styleClass="form-label" style="-fx-font-weight:bold"/>
+                    <TableView fx:id="tableWalletHistory" prefHeight="250">
+                        <columns>
+                            <TableColumn fx:id="colTxType" text="Loại" prefWidth="100"/>
+                            <TableColumn fx:id="colTxAmount" text="Số tiền" prefWidth="100"/>
+                            <TableColumn fx:id="colTxDesc" text="Mô tả" prefWidth="180"/>
+                            <TableColumn fx:id="colTxTime" text="Thời gian" prefWidth="160"/>
+                        </columns>
+                        <placeholder><Label text="Chưa có giao dịch nào"/></placeholder>
+                    </TableView>
+                </VBox>
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>
