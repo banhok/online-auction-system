@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.DashboardController"
+            styleClass="dashboard-container">
+
+    <!-- TOP BAR -->
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+
+            <Label fx:id="lblWelcome" text="Xin chào" styleClass="welcome-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblBalance" text="Số dư: 0 VNĐ" styleClass="balance-label"/>
+
+            <Button fx:id="btnTopUp" text="💰 Nạp tiền" onAction="#handleTopUp" styleClass="btn-success"/>
+            <Button fx:id="btnProfile" text="👤 Tài khoản" onAction="#handleProfile" styleClass="btn-secondary"/>
+            <Button fx:id="btnSellerPanel" text="📦 Quản lý SP" onAction="#handleSellerPanel" styleClass="btn-secondary"/>
+            <Button fx:id="btnAdminPanel" text="⚙️ Admin" onAction="#handleAdminPanel" styleClass="btn-secondary"/>
+            <Button fx:id="btnLogout" text="🚪 Đăng xuất" onAction="#handleLogout" styleClass="btn-danger"/>
+        </HBox>
+    </top>
+
+    <!-- CENTER -->
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <!-- TAB 1: Tất cả phiên đấu giá -->
+                <Tab text="📋 Danh sách phiên đấu giá">
+                    <VBox spacing="15">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                        <!-- Search + Filter -->
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="txtSearch" promptText="🔍 Tìm kiếm theo ID..." prefWidth="300"
+                                       styleClass="form-input" onAction="#handleSearch"/>
+                            <ComboBox fx:id="cboStatusFilter" prefWidth="150" styleClass="form-input"/>
+                            <Button fx:id="btnRefresh" text="🔄 Làm mới" onAction="#loadAuctions" styleClass="btn-secondary"/>
+                        </HBox>
+
+                        <!-- Table -->
+                        <TableView fx:id="tableAuctions" VBox.vgrow="ALWAYS" styleClass="auction-table">
+                            <columns>
+                                <TableColumn fx:id="colItem" text="Sản phẩm" prefWidth="220"/>
+                                <TableColumn fx:id="colPrice" text="Giá hiện tại" prefWidth="140"/>
+                                <TableColumn fx:id="colBids" text="Lượt bid" prefWidth="80"/>
+                                <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="110"/>
+                                <TableColumn fx:id="colStartTime" text="Bắt đầu" prefWidth="170"/>
+                                <TableColumn fx:id="colEndTime" text="Kết thúc" prefWidth="170"/>
+                            </columns>
+                            <placeholder><Label text="Chưa có phiên đấu giá nào"/></placeholder>
+                        </TableView>
+
+                        <Label text="💡 Double-click vào phiên để xem chi tiết" styleClass="hint-label"/>
+                    </VBox>
+                </Tab>
+
+                <!-- TAB 2: Phiên đã thắng -->
+                <Tab text="🏆 Phiên đã thắng">
+                    <VBox spacing="15">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="btnRefreshWins" text="🔄 Làm mới" onAction="#loadMyWins" styleClass="btn-secondary"/>
+                        </HBox>
+
+                        <TableView fx:id="tableMyWins" VBox.vgrow="ALWAYS" styleClass="auction-table">
+                            <columns>
+                                <TableColumn fx:id="colWinItem" text="Sản phẩm" prefWidth="260"/>
+                                <TableColumn fx:id="colWinPrice" text="Giá thắng" prefWidth="160"/>
+                                <TableColumn fx:id="colWinStatus" text="Trạng thái" prefWidth="160"/>
+                                <TableColumn fx:id="colWinEndTime" text="Kết thúc lúc" prefWidth="200"/>
+                            </columns>
+                            <placeholder><Label text="Bạn chưa thắng phiên nào"/></placeholder>
+                        </TableView>
+
+                        <Label text="💡 Double-click vào phiên đã thắng (FINISHED) để mở và thanh toán" styleClass="hint-label"/>
+                    </VBox>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>
