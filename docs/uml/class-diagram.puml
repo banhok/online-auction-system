@@ -1,0 +1,400 @@
+@startuml OnlineAuctionSystemClassDiagram
+title Online Auction System - Class Diagram
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+left to right direction
+hide empty members
+
+package "auction-common.command" {
+  enum CommandType
+}
+
+package "auction-common.dto" {
+  class Request {
+    - CommandType command
+    - Map<String,Object> data
+    + put(String, Object) : Request
+    + getString(String) : String
+    + getInt(String) : int
+    + getDouble(String) : double
+  }
+
+  class Response {
+    - CommandType command
+    - boolean success
+    - String message
+    - Map<String,Object> data
+    + ok(CommandType, String) : Response
+    + error(CommandType, String) : Response
+  }
+}
+
+package "auction-common.model" {
+  abstract class Entity {
+    - int id
+    - LocalDateTime createdAt
+    - LocalDateTime updatedAt
+    + printInfo() : String
+  }
+
+  abstract class User {
+    - String username
+    - String password
+    - String fullName
+    - String email
+    - UserRole role
+    - double balance
+  }
+
+  class Bidder
+  class Seller
+  class Admin
+
+  abstract class Item {
+    - int sellerId
+    - String name
+    - String description
+    - ItemCategory category
+    - String imageUrl
+    - double startingPrice
+    + getCategoryDetails() : String
+  }
+
+  class Electronics
+  class Art
+  class Vehicle
+
+  class Auction {
+    - int itemId
+    - int sellerId
+    - double startingPrice
+    - double currentPrice
+    - int bidCount
+    - AuctionStatus status
+    - LocalDateTime startTime
+    - LocalDateTime endTime
+    - Integer winnerId
+    - double depositAmount
+    + applyBid(double) : void
+    + isExpired() : boolean
+    + extendEndTime() : void
+  }
+
+  class BidTransaction {
+    - int auctionId
+    - int bidderId
+    - double bidAmount
+    - LocalDateTime bidTime
+    - boolean valid
+  }
+
+  class Deposit {
+    - int userId
+    - int auctionId
+    - double amount
+    - DepositStatus status
+  }
+
+  class WalletTransaction {
+    - int userId
+    - WalletTransactionType type
+    - double amount
+    - String description
+  }
+
+  enum UserRole
+  enum ItemCategory
+  enum AuctionStatus
+  enum DepositStatus
+  enum WalletTransactionType
+}
+
+package "auction-common.exception" {
+  abstract class AuctionException
+  class AuthenticationException
+  class InsufficientBalanceException
+  class InvalidBidException
+  class NotFoundException
+}
+
+package "auction-common.util" {
+  class JsonUtil <<utility>>
+  class DateTimeUtil <<utility>>
+}
+
+package "auction-server.dao" {
+  class DatabaseManager <<singleton>> {
+    - Connection connection
+    + getInstance() : DatabaseManager
+    + getConnection() : Connection
+    + getDbLock() : Object
+  }
+
+  class UserDAO
+  class ItemDAO
+  class AuctionDAO
+  class BidTransactionDAO
+  class DepositDAO
+  class WalletTransactionDAO
+}
+
+package "auction-server.service" {
+  class UserService
+  class ItemService
+  class AuctionService {
+    - ConcurrentHashMap<Integer,ReentrantLock> auctionLocks
+    + createAuction(...) : Auction
+    + joinAuction(int, int) : void
+    + placeBid(int, int, double) : BidTransaction
+    + finishAuction(int) : void
+    + payForWon(int, int) : void
+    + cancelAuction(int, int) : void
+  }
+  class WalletService
+  class AuctionScheduler
+}
+
+package "auction-server.controller" {
+  class CommandRouter {
+    + route(Request) : Response
+  }
+  class UserController
+  class ItemController
+  class AuctionController
+  class WalletController
+}
+
+package "auction-server.network" {
+  class ServerApp
+  class SocketServer
+  class ClientHandler
+}
+
+package "auction-server.observer" {
+  interface AuctionEventListener {
+    + onEvent(Response) : void
+    + getUserId() : int
+  }
+
+  class AuctionEventManager {
+    + registerGlobal(AuctionEventListener) : void
+    + subscribe(int, AuctionEventListener) : void
+    + notifyAuction(int, Response) : void
+    + notifyUser(int, Response) : void
+    + broadcast(Response) : void
+  }
+}
+
+package "auction-server.strategy" {
+  interface EndStrategy {
+    + handleNewBid(Auction) : boolean
+  }
+
+  class AntiSnipeEndStrategy
+  class NormalEndStrategy
+}
+
+package "auction-server.factory" {
+  class ItemFactory <<factory>> {
+    + create(ItemCategory, int, String, String, String, double, Map) : Item
+  }
+}
+
+package "auction-client" {
+  class ClientApp
+
+  package "controller" {
+    class LoginController
+    class RegisterController
+    class DashboardController
+    class AuctionDetailController
+    class SellerPanelController
+    class ProfileController
+    class AdminPanelController
+  }
+
+  package "network" {
+    class ServerConnection <<singleton>> {
+      + connect(String, int) : void
+      + sendRequest(Request) : Response
+      + addEventListener(Consumer<Response>) : void
+      + disconnect() : void
+    }
+  }
+
+  package "util" {
+    class SceneManager <<singleton>>
+    class AlertUtil <<utility>>
+    class MoneyFormatter <<utility>>
+    class CountdownTimer
+  }
+}
+
+' Domain inheritance
+Entity <|-- User
+User <|-- Bidder
+User <|-- Seller
+User <|-- Admin
+
+Entity <|-- Item
+Item <|-- Electronics
+Item <|-- Art
+Item <|-- Vehicle
+
+Entity <|-- Auction
+Entity <|-- BidTransaction
+Entity <|-- Deposit
+Entity <|-- WalletTransaction
+
+AuctionException <|-- AuthenticationException
+AuctionException <|-- InsufficientBalanceException
+AuctionException <|-- InvalidBidException
+AuctionException <|-- NotFoundException
+
+' Domain references
+User --> UserRole
+Item --> ItemCategory
+Auction --> AuctionStatus
+Deposit --> DepositStatus
+WalletTransaction --> WalletTransactionType
+Auction "1" --> "1" Item : itemId
+Auction "1" --> "1" Seller : sellerId
+Auction "0..1" --> "1" Bidder : winnerId
+BidTransaction "*" --> "1" Auction : auctionId
+BidTransaction "*" --> "1" Bidder : bidderId
+Deposit "*" --> "1" User : userId
+Deposit "*" --> "1" Auction : auctionId
+WalletTransaction "*" --> "1" User : userId
+
+' DTO and utilities
+Request --> CommandType
+Response --> CommandType
+JsonUtil ..> Request
+JsonUtil ..> Response
+JsonUtil ..> Item
+
+' Server layering
+ServerApp --> SocketServer
+ServerApp --> AuctionScheduler
+SocketServer --> ClientHandler
+SocketServer --> CommandRouter
+SocketServer --> AuctionEventManager
+ClientHandler ..|> AuctionEventListener
+ClientHandler --> CommandRouter
+ClientHandler --> JsonUtil
+ClientHandler --> Request
+ClientHandler --> Response
+
+CommandRouter --> UserController
+CommandRouter --> ItemController
+CommandRouter --> AuctionController
+CommandRouter --> WalletController
+CommandRouter --> Request
+CommandRouter --> Response
+
+UserController --> UserService
+ItemController --> ItemService
+AuctionController --> AuctionService
+AuctionController --> AuctionEventManager
+WalletController --> WalletService
+
+UserService --> UserDAO
+ItemService --> ItemDAO
+ItemService --> AuctionDAO
+ItemService ..> ItemFactory
+AuctionService --> AuctionDAO
+AuctionService --> BidTransactionDAO
+AuctionService --> DepositDAO
+AuctionService --> UserDAO
+AuctionService --> WalletService
+AuctionService --> AuctionEventManager
+AuctionService --> EndStrategy
+WalletService --> UserDAO
+WalletService --> WalletTransactionDAO
+WalletService --> AuctionEventManager
+AuctionScheduler --> AuctionService
+AuctionScheduler --> AuctionDAO
+
+UserDAO --> DatabaseManager
+ItemDAO --> DatabaseManager
+AuctionDAO --> DatabaseManager
+BidTransactionDAO --> DatabaseManager
+DepositDAO --> DatabaseManager
+WalletTransactionDAO --> DatabaseManager
+UserDAO ..> User
+ItemDAO ..> Item
+AuctionDAO ..> Auction
+BidTransactionDAO ..> BidTransaction
+DepositDAO ..> Deposit
+WalletTransactionDAO ..> WalletTransaction
+
+AuctionEventManager o--> AuctionEventListener
+AuctionEventManager --> Response
+
+EndStrategy <|.. AntiSnipeEndStrategy
+EndStrategy <|.. NormalEndStrategy
+EndStrategy ..> Auction
+ItemFactory ..> Item
+ItemFactory ..> Electronics
+ItemFactory ..> Art
+ItemFactory ..> Vehicle
+
+' Client dependencies
+ClientApp --> SceneManager
+LoginController --> ServerConnection
+RegisterController --> ServerConnection
+DashboardController --> ServerConnection
+AuctionDetailController --> ServerConnection
+SellerPanelController --> ServerConnection
+ProfileController --> ServerConnection
+AdminPanelController --> ServerConnection
+AuctionDetailController --> CountdownTimer
+DashboardController --> SceneManager
+SellerPanelController --> MoneyFormatter
+ProfileController --> MoneyFormatter
+
+ServerConnection --> Request
+ServerConnection --> Response
+ServerConnection --> JsonUtil
+ServerConnection --> CommandType
+ServerConnection ..> "Consumer<Response>" : realtime listeners
+
+' Layout hints: keep the main layers readable in rows.
+Request -[hidden]right- Response
+User -[hidden]right- Item
+Item -[hidden]right- Auction
+Auction -[hidden]right- BidTransaction
+BidTransaction -[hidden]right- Deposit
+Deposit -[hidden]right- WalletTransaction
+
+DatabaseManager -[hidden]right- UserDAO
+UserDAO -[hidden]right- ItemDAO
+ItemDAO -[hidden]right- AuctionDAO
+AuctionDAO -[hidden]right- BidTransactionDAO
+BidTransactionDAO -[hidden]right- DepositDAO
+DepositDAO -[hidden]right- WalletTransactionDAO
+
+CommandRouter -[hidden]right- UserController
+UserController -[hidden]right- ItemController
+ItemController -[hidden]right- AuctionController
+AuctionController -[hidden]right- WalletController
+
+UserService -[hidden]right- ItemService
+ItemService -[hidden]right- AuctionService
+AuctionService -[hidden]right- WalletService
+WalletService -[hidden]right- AuctionScheduler
+
+ServerApp -[hidden]right- SocketServer
+SocketServer -[hidden]right- ClientHandler
+
+LoginController -[hidden]right- RegisterController
+RegisterController -[hidden]right- DashboardController
+DashboardController -[hidden]right- AuctionDetailController
+AuctionDetailController -[hidden]right- SellerPanelController
+SellerPanelController -[hidden]right- ProfileController
+ProfileController -[hidden]right- AdminPanelController
+
+@enduml
