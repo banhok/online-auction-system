@@ -43,6 +43,11 @@ public class SceneManager {
 
     /**
      * Chuyển sang màn hình khác.
+     *
+     * Lần đầu: tạo Scene mới + gắn CSS + setScene(). Các lần sau dùng `scene.setRoot(newRoot)`
+     * — giữ nguyên Scene đang gắn vào Stage → không re-create native window → switch mượt mà
+     * và giữ trạng thái cửa sổ (maximize/fullscreen/position) qua các lần chuyển.
+     *
      * @param fxmlFile tên file FXML (ví dụ: "login.fxml")
      * @param title tiêu đề cửa sổ
      */
@@ -52,24 +57,28 @@ public class SceneManager {
                     getClass().getResource("/fxml/" + fxmlFile));
             Parent root = loader.load();
 
-            // Lưu controller để truy cập sau
             Object controller = loader.getController();
             if (controller != null) {
                 controllers.put(fxmlFile, controller);
             }
 
-            Scene scene = new Scene(root);
-
-            // Load CSS
-            String css = getClass().getResource("/css/style.css") != null
-                    ? getClass().getResource("/css/style.css").toExternalForm()
-                    : null;
-            if (css != null) {
-                scene.getStylesheets().add(css);
+            Scene scene = primaryStage.getScene();
+            if (scene == null) {
+                // Lần đầu — tạo Scene + gắn CSS
+                scene = new Scene(root);
+                String css = getClass().getResource("/css/style.css") != null
+                        ? getClass().getResource("/css/style.css").toExternalForm()
+                        : null;
+                if (css != null) {
+                    scene.getStylesheets().add(css);
+                }
+                primaryStage.setScene(scene);
+            } else {
+                // Các lần sau — chỉ swap root, giữ Scene + CSS + Stage state
+                scene.setRoot(root);
             }
 
             primaryStage.setTitle("Auction System - " + title);
-            primaryStage.setScene(scene);
             primaryStage.show();
 
             logger.info("Switched to scene: {}", fxmlFile);
@@ -79,14 +88,49 @@ public class SceneManager {
         }
     }
 
+    /** Kích thước chuẩn cho các main screen sau login — dùng cùng size để switch mượt. */
+    public static final double MAIN_WIDTH = 1300;
+    public static final double MAIN_HEIGHT = 820;
+    /** Min size — user không thu nhỏ window được dưới mức này (tránh cut layout). */
+    public static final double MIN_WIDTH = 1100;
+    public static final double MIN_HEIGHT = 720;
+
     /**
      * Chuyển scene với kích thước cụ thể.
+     *
+     * Rule:
+     * - Nếu Stage đang maximize / fullscreen / iconified → KHÔNG động kích thước
+     *   (user đang ở chế độ phóng to, switch scene phải giữ nguyên).
+     * - Còn lại, chỉ resize + center nếu kích thước HIỆN TẠI khác w/h → switch giữa các
+     *   main screen cùng size không bị "khựng" do window resize/reposition.
      */
     public void switchScene(String fxmlFile, String title, double width, double height) {
+        boolean preserveState = primaryStage != null
+                && (primaryStage.isMaximized() || primaryStage.isFullScreen()
+                    || primaryStage.isIconified());
+
         switchScene(fxmlFile, title);
-        primaryStage.setWidth(width);
-        primaryStage.setHeight(height);
-        primaryStage.centerOnScreen();
+
+        // Set min size cho main screen — tránh user thu nhỏ window làm layout vỡ.
+        // Login/Register có size nhỏ riêng → không apply min size đó.
+        if (width >= MAIN_WIDTH) {
+            primaryStage.setMinWidth(MIN_WIDTH);
+            primaryStage.setMinHeight(MIN_HEIGHT);
+        } else {
+            // Login/Register — bỏ min size
+            primaryStage.setMinWidth(0);
+            primaryStage.setMinHeight(0);
+        }
+
+        if (preserveState) return;
+
+        boolean needResize = Math.abs(primaryStage.getWidth() - width) > 1
+                || Math.abs(primaryStage.getHeight() - height) > 1;
+        if (needResize) {
+            primaryStage.setWidth(width);
+            primaryStage.setHeight(height);
+            primaryStage.centerOnScreen();
+        }
     }
 
     /**
