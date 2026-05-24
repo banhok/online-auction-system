@@ -2,9 +2,9 @@ name: Java CI/CD
 
 on:
   push:
-    branches: [ main, develop, develop-v2 ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main, develop, develop-v2 ]
+    branches: [ main ]
 
 jobs:
   build-and-test:
