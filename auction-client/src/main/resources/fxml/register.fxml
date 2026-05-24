@@ -8,7 +8,8 @@
       alignment="CENTER" spacing="15" styleClass="login-container">
     <padding><Insets top="30" right="50" bottom="30" left="50"/></padding>
 
-    <Label text="📝 Đăng ký tài khoản" styleClass="app-title"/>
+    <Label text="🔨 AuctionHub" styleClass="app-title"/>
+    <Label text="Đăng ký tài khoản mới" styleClass="app-subtitle"/>
 
     <VBox spacing="10" alignment="CENTER" maxWidth="350">
         <Label text="Tên đăng nhập" styleClass="form-label"/>

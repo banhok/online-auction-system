@@ -10,8 +10,8 @@
     <padding><Insets top="40" right="50" bottom="40" left="50"/></padding>
 
     <!-- Logo / Title -->
-    <Label text="🏷️ AUCTION SYSTEM" styleClass="app-title"/>
-    <Label text="Hệ thống đấu giá trực tuyến" styleClass="app-subtitle"/>
+    <Label text="🔨 AuctionHub" styleClass="app-title"/>
+    <Label text="Đấu giá minh bạch — Mua bán nhanh chóng" styleClass="app-subtitle"/>
 
     <Region prefHeight="20"/>
 
