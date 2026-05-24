@@ -1,79 +1,47 @@
 package com.auction.client.util;
 
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.util.Optional;
 
 /**
- * AlertUtil — tiện ích hiển thị popup thông báo trong JavaFX.
+ * AlertUtil — tiện ích popup. Hiện chuyển toàn bộ sang ModalDialog (custom UI đồng nhất theme),
+ * không còn dùng JavaFX Alert mặc định Windows.
+ *
+ * Owner Window mặc định lấy từ {@link SceneManager#getPrimaryStage()} — gọi từ bất kỳ controller nào
+ * đều hoạt động đúng.
  */
 public final class AlertUtil {
 
-    private AlertUtil() {
+    private AlertUtil() {}
+
+    private static Window owner() {
+        try {
+            Stage stage = SceneManager.getInstance().getPrimaryStage();
+            return stage;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    /**
-     * Hiển thị thông báo thành công.
-     */
     public static void showInfo(String title, String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
+        ModalDialog.info(owner(), title, message);
     }
 
-    /**
-     * Hiển thị thông báo lỗi.
-     */
     public static void showError(String title, String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
+        ModalDialog.error(owner(), title, message);
     }
 
-    /**
-     * Hiển thị cảnh báo.
-     */
     public static void showWarning(String title, String message) {
-        Platform.runLater(() -> {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle(title);
-            alert.setHeaderText(null);
-            alert.setContentText(message);
-            alert.showAndWait();
-        });
+        ModalDialog.warning(owner(), title, message);
     }
 
-    /**
-     * Hiển thị hộp thoại xác nhận (OK / Cancel).
-     */
     public static boolean showConfirm(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        Optional<ButtonType> result = alert.showAndWait();
-        return result.isPresent() && result.get() == ButtonType.OK;
+        return ModalDialog.confirm(owner(), title, message);
     }
 
-    /**
-     * Hiển thị hộp thoại nhập liệu.
-     */
     public static Optional<String> showInput(String title, String message, String defaultValue) {
-        TextInputDialog dialog = new TextInputDialog(defaultValue);
-        dialog.setTitle(title);
-        dialog.setHeaderText(null);
-        dialog.setContentText(message);
-        return dialog.showAndWait();
+        return ModalDialog.input(owner(), title, message, defaultValue);
     }
 }
