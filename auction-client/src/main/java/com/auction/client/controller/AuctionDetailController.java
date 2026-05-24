@@ -11,8 +11,12 @@ import com.auction.common.model.AuctionStatus;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
 import com.auction.client.util.CountdownTimer;
+import com.auction.client.util.ImageLoader;
+import com.auction.client.util.LoadingOverlay;
+import com.auction.client.util.ModalDialog;
 import com.auction.client.util.MoneyFormatter;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.ToastUtil;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -22,6 +26,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
 import javafx.util.StringConverter;
 
 import java.time.Duration;
@@ -60,6 +65,7 @@ public class AuctionDetailController {
     @FXML private LineChart<Number, Number> chartPrice;
     @FXML private NumberAxis xAxis;
     @FXML private NumberAxis yAxis;
+    @FXML private ImageView imgItem;
 
     private static Auction selectedAuction;
     private final ServerConnection conn = ServerConnection.getInstance();
@@ -143,14 +149,19 @@ public class AuctionDetailController {
     private void updateAuctionDisplay() {
         lblAuctionId.setText("Phiên #" + selectedAuction.getId());
         lblItemName.setText("Item #" + selectedAuction.getItemId());
-        lblStartingPrice.setText("Giá khởi điểm: " + MoneyFormatter.format(selectedAuction.getStartingPrice()));
+        lblStartingPrice.setText("KĐ: " + MoneyFormatter.format(selectedAuction.getStartingPrice()));
         lblCurrentPrice.setText(MoneyFormatter.format(selectedAuction.getCurrentPrice()));
-        lblBidCount.setText(selectedAuction.getBidCount() + " lượt đấu giá");
+        lblBidCount.setText(selectedAuction.getBidCount() + " lượt");
         lblStatus.setText(selectedAuction.getStatus().name());
         if (lblStartEndTime != null) {
-            lblStartEndTime.setText(
-                    "🟢 " + DateTimeUtil.formatDisplay(selectedAuction.getStartTime())
-                    + "  →  🔴 " + DateTimeUtil.formatDisplay(selectedAuction.getEndTime()));
+            // Compact format: chỉ "HH:mm dd/MM → HH:mm dd/MM" để fit cột phải
+            java.time.format.DateTimeFormatter compact =
+                    java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM");
+            String start = selectedAuction.getStartTime() != null
+                    ? selectedAuction.getStartTime().format(compact) : "—";
+            String end = selectedAuction.getEndTime() != null
+                    ? selectedAuction.getEndTime().format(compact) : "—";
+            lblStartEndTime.setText(start + " → " + end);
         }
     }
 
@@ -197,12 +208,14 @@ public class AuctionDetailController {
      */
     @FXML
     private void handleJoinAuction() {
-        if (!AlertUtil.showConfirm("Xác nhận",
+        if (!ModalDialog.confirm(btnJoinAuction.getScene().getWindow(),
+                "Xác nhận tham gia",
                 "Đặt cọc " + MoneyFormatter.format(selectedAuction.getDepositAmount())
                         + " để tham gia phiên đấu giá?")) {
             return;
         }
 
+        LoadingOverlay overlay = LoadingOverlay.show(lblCurrentPrice);
         new Thread(() -> {
             try {
                 Request req = new Request(CommandType.JOIN_AUCTION);
@@ -210,14 +223,18 @@ public class AuctionDetailController {
                 Response resp = conn.sendRequest(req);
 
                 Platform.runLater(() -> {
+                    overlay.hide();
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đã tham gia đấu giá!");
+                        ToastUtil.success(lblCurrentPrice, "🎫 Đã đặt cọc tham gia đấu giá");
                     } else {
                         AlertUtil.showError("Lỗi", resp.getMessage());
                     }
                 });
             } catch (Exception e) {
-                Platform.runLater(() -> AlertUtil.showError("Lỗi", e.getMessage()));
+                Platform.runLater(() -> {
+                    overlay.hide();
+                    AlertUtil.showError("Lỗi", e.getMessage());
+                });
             }
         }).start();
     }
@@ -241,12 +258,14 @@ public class AuctionDetailController {
             return;
         }
 
-        if (!AlertUtil.showConfirm("Xác nhận đặt giá",
+        if (!ModalDialog.confirm(btnPlaceBid.getScene().getWindow(),
+                "Xác nhận đặt giá",
                 "Bạn chắc chắn muốn đặt giá " + MoneyFormatter.format(amount) + "?")) {
             return;
         }
 
         btnPlaceBid.setDisable(true);
+        LoadingOverlay overlay = LoadingOverlay.show(lblCurrentPrice);
 
         new Thread(() -> {
             try {
@@ -256,21 +275,38 @@ public class AuctionDetailController {
                 Response resp = conn.sendRequest(req);
 
                 Platform.runLater(() -> {
+                    overlay.hide();
                     btnPlaceBid.setDisable(false);
                     if (resp.isSuccess()) {
                         txtBidAmount.clear();
-                        AlertUtil.showInfo("Thành công", "Đặt giá thành công!");
+                        ToastUtil.success(lblCurrentPrice,
+                                "🔨 Đặt giá " + MoneyFormatter.format(amount) + " thành công");
                     } else {
                         AlertUtil.showError("Đặt giá thất bại", resp.getMessage());
                     }
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
+                    overlay.hide();
                     btnPlaceBid.setDisable(false);
                     AlertUtil.showError("Lỗi", e.getMessage());
                 });
             }
         }).start();
+    }
+
+    /**
+     * Quick-bid: tự fill giá dựa trên currentPrice * (1 + pct). User vẫn cần bấm "Đặt giá".
+     */
+    @FXML private void handleQuickBid10() { setBidFromPercent(0.10); }
+    @FXML private void handleQuickBid20() { setBidFromPercent(0.20); }
+    @FXML private void handleQuickBid50() { setBidFromPercent(0.50); }
+
+    private void setBidFromPercent(double pct) {
+        if (selectedAuction == null || txtBidAmount == null) return;
+        double newAmount = selectedAuction.getCurrentPrice() * (1 + pct);
+        // formatPlain — không có "VNĐ" suffix vì TextFormatter chặn ký tự không phải số/dấu phẩy
+        txtBidAmount.setText(MoneyFormatter.formatPlain(newAmount));
     }
 
     /**
@@ -313,14 +349,20 @@ public class AuctionDetailController {
                     selectedAuction.setCurrentPrice(newPrice);
                     selectedAuction.setBidCount(newBidCount);
                     lblCurrentPrice.setText(MoneyFormatter.format(newPrice));
-                    lblBidCount.setText(newBidCount + " lượt đấu giá");
+                    lblBidCount.setText(newBidCount + " lượt");
                     updateParticipantLabel(response.get("participantCount"));
 
                     // Cache tên bidder cho table hiển thị + chart label
                     Object bidderIdObj = response.get("bidderId");
                     String bidderName = response.getString("bidderName");
                     if (bidderIdObj instanceof Number && bidderName != null) {
-                        bidderNames.put(((Number) bidderIdObj).intValue(), bidderName);
+                        int bidderId = ((Number) bidderIdObj).intValue();
+                        bidderNames.put(bidderId, bidderName);
+                        // Toast cho bid của người khác — bid của chính mình đã có Alert "Thành công"
+                        if (bidderId != conn.getCurrentUserId()) {
+                            ToastUtil.info(lblCurrentPrice,
+                                    "🔨 " + bidderName + " vừa đặt " + MoneyFormatter.format(newPrice));
+                        }
                     }
 
                     // Thêm điểm vào biểu đồ (realtime) — X = giây trôi qua kể từ startTime.
@@ -351,7 +393,9 @@ public class AuctionDetailController {
                         updateExtendedBadge();
                         // Mở rộng upper bound trục X cho phù hợp với endTime mới
                         configureChartAxes();
-                        AlertUtil.showInfo("Gia hạn", "Phiên đấu giá được gia hạn thêm!");
+                        // Non-blocking toast — không cắt mạch user đang bid
+                        ToastUtil.warning(lblCurrentPrice,
+                                "🕒 Phiên được gia hạn do anti-snipe!");
                     }
                     break;
 
@@ -470,7 +514,7 @@ public class AuctionDetailController {
     private void updateParticipantLabel(Object countObj) {
         if (lblParticipantCount == null || !(countObj instanceof Number)) return;
         int count = ((Number) countObj).intValue();
-        lblParticipantCount.setText("👥 " + count + " người tham gia");
+        lblParticipantCount.setText("👥 " + count);
     }
 
     /**
@@ -499,9 +543,13 @@ public class AuctionDetailController {
     }
 
     /**
-     * Load chi tiết sản phẩm (server đã gọi Item.getCategoryDetails() polymorphism).
+     * Load chi tiết sản phẩm (server đã gọi Item.getCategoryDetails() polymorphism)
+     * + image URL từ item JSON để hiển thị hero image.
      */
     private void loadItemDetails() {
+        // Set placeholder ngay để có visual fallback nếu load chậm/lỗi
+        if (imgItem != null) imgItem.setImage(ImageLoader.placeholder());
+
         new Thread(() -> {
             try {
                 Request req = new Request(CommandType.GET_ITEM);
@@ -509,9 +557,25 @@ public class AuctionDetailController {
                 Response resp = conn.sendRequest(req);
                 if (resp.isSuccess()) {
                     String details = resp.getString("categoryDetails");
+                    // Parse item JSON để lấy imageUrl (không deserialize full Item vì abstract)
+                    String imageUrl = null;
+                    String itemJson = resp.getString("item");
+                    if (itemJson != null) {
+                        try {
+                            com.google.gson.JsonObject obj = JsonUtil.getGson()
+                                    .fromJson(itemJson, com.google.gson.JsonObject.class);
+                            if (obj != null && obj.has("imageUrl") && !obj.get("imageUrl").isJsonNull()) {
+                                imageUrl = obj.get("imageUrl").getAsString();
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                    final String finalImageUrl = imageUrl;
                     Platform.runLater(() -> {
                         if (lblItemDetails != null && details != null) {
                             lblItemDetails.setText(details);
+                        }
+                        if (imgItem != null) {
+                            imgItem.setImage(ImageLoader.load(finalImageUrl, 420, 220));
                         }
                     });
                 }
@@ -550,13 +614,15 @@ public class AuctionDetailController {
      */
     @FXML
     private void handlePay() {
-        if (!AlertUtil.showConfirm("Xác nhận thanh toán",
+        if (!ModalDialog.confirm(btnPay.getScene().getWindow(),
+                "Xác nhận thanh toán",
                 "Thanh toán " + MoneyFormatter.format(selectedAuction.getCurrentPrice())
                         + " cho phiên này? (cọc đã đặt sẽ được trừ vào tổng)")) {
             return;
         }
 
         btnPay.setDisable(true);
+        LoadingOverlay overlay = LoadingOverlay.show(lblCurrentPrice);
         new Thread(() -> {
             try {
                 Request req = new Request(CommandType.PAY_WINNER);
@@ -564,19 +630,21 @@ public class AuctionDetailController {
                 Response resp = conn.sendRequest(req);
 
                 Platform.runLater(() -> {
+                    overlay.hide();
                     btnPay.setDisable(false);
                     if (resp.isSuccess()) {
                         selectedAuction.setStatus(AuctionStatus.PAID);
                         lblStatus.setText("PAID");
                         btnPay.setVisible(false);
                         btnPay.setManaged(false);
-                        AlertUtil.showInfo("Thành công", "Thanh toán thành công!");
+                        ToastUtil.success(lblCurrentPrice, "💳 Thanh toán hoàn tất 🎉");
                     } else {
                         AlertUtil.showError("Lỗi", resp.getMessage());
                     }
                 });
             } catch (Exception e) {
                 Platform.runLater(() -> {
+                    overlay.hide();
                     btnPay.setDisable(false);
                     AlertUtil.showError("Lỗi", e.getMessage());
                 });
@@ -589,6 +657,22 @@ public class AuctionDetailController {
         // Cleanup
         if (countdownTimer != null) countdownTimer.stop();
         if (realtimeListener != null) conn.removeEventListener(realtimeListener);
-        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard", 1200, 800);
+
+        // Gửi UNSUBSCRIBE lên server fire-and-forget — ngăn duplicate subscriber khi quay lại
+        if (selectedAuction != null) {
+            final int auctionId = selectedAuction.getId();
+            new Thread(() -> {
+                try {
+                    Request req = new Request(CommandType.UNSUBSCRIBE_AUCTION);
+                    req.put("auctionId", auctionId);
+                    conn.sendRequest(req);
+                } catch (Exception ignored) {
+                    // Best-effort: lỗi network không sao, server tự cleanup khi client disconnect
+                }
+            }).start();
+        }
+
+        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 }

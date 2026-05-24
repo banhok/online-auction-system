@@ -7,8 +7,11 @@ import com.auction.common.model.User;
 import com.auction.common.util.JsonUtil;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
+import com.auction.client.util.AvatarInitials;
+import com.auction.client.util.ModalDialog;
 import com.auction.client.util.MoneyFormatter;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.ToastUtil;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,6 +19,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 
 import java.util.List;
 
@@ -36,12 +40,16 @@ public class AdminPanelController {
     @FXML private Button btnRefresh;
     @FXML private Button btnDeleteUser;
     @FXML private Button btnBack;
+    @FXML private StackPane avatarSlot;
 
     private final ServerConnection conn = ServerConnection.getInstance();
     private final ObservableList<User> userList = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
+        if (avatarSlot != null) {
+            avatarSlot.getChildren().setAll(AvatarInitials.create(conn.getCurrentUsername(), 36));
+        }
         colUserId.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getId())));
         colUsername.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getUsername()));
         colFullName.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getFullName()));
@@ -86,7 +94,8 @@ public class AdminPanelController {
             AlertUtil.showError("Lỗi", "Không thể xóa chính mình");
             return;
         }
-        if (!AlertUtil.showConfirm("Xác nhận", "Xóa user " + selected.getUsername() + "?")) {
+        if (!ModalDialog.confirm(btnDeleteUser.getScene().getWindow(),
+                "Xác nhận", "Xóa user " + selected.getUsername() + "?")) {
             return;
         }
 
@@ -97,7 +106,7 @@ public class AdminPanelController {
                 Response resp = conn.sendRequest(req);
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đã xóa user");
+                        ToastUtil.success(lblTotalUsers, "Đã xóa user " + selected.getUsername());
                         loadUsers();
                     } else {
                         AlertUtil.showError("Lỗi", resp.getMessage());
@@ -111,6 +120,7 @@ public class AdminPanelController {
 
     @FXML
     private void handleBack() {
-        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard", 1200, 800);
+        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 }

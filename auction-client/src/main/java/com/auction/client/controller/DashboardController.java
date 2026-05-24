@@ -4,20 +4,36 @@ import com.auction.common.command.CommandType;
 import com.auction.common.dto.Request;
 import com.auction.common.dto.Response;
 import com.auction.common.model.Auction;
-//import com.auction.common.model.AuctionStatus;
+import com.auction.common.model.AuctionStatus;
+import com.auction.common.model.Item;
+import com.auction.common.model.ItemCategory;
 import com.auction.common.util.DateTimeUtil;
 import com.auction.common.util.JsonUtil;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
+import com.auction.client.util.AvatarInitials;
+import com.auction.client.util.ImageLoader;
+import com.auction.client.util.ModalDialog;
 import com.auction.client.util.MoneyFormatter;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.StatusBadge;
+import com.auction.client.util.ToastUtil;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.TilePane;
+import javafx.scene.layout.VBox;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,15 +48,12 @@ public class DashboardController {
 
     @FXML private Label lblWelcome;
     @FXML private Label lblBalance;
+    @FXML private StackPane avatarSlot;
     @FXML private TextField txtSearch;
     @FXML private ComboBox<String> cboStatusFilter;
-    @FXML private TableView<Auction> tableAuctions;
-    @FXML private TableColumn<Auction, String> colItem;
-    @FXML private TableColumn<Auction, String> colPrice;
-    @FXML private TableColumn<Auction, String> colBids;
-    @FXML private TableColumn<Auction, String> colStatus;
-    @FXML private TableColumn<Auction, String> colStartTime;
-    @FXML private TableColumn<Auction, String> colEndTime;
+    @FXML private TilePane gridAuctions;
+    @FXML private ScrollPane scrollAuctions;
+    @FXML private HBox categoryChipsBox;
     @FXML private Button btnRefresh;
     @FXML private Button btnSellerPanel;
     @FXML private Button btnAdminPanel;
@@ -63,49 +76,32 @@ public class DashboardController {
     // Map itemId → name dùng để render cột "Sản phẩm" — server trả kèm response
     private final Map<Integer, String> itemNames = new HashMap<>();
     private final Map<Integer, String> myWinsItemNames = new HashMap<>();
+    /** Cache imageUrl theo itemId — lazy fetch qua GET_ITEM, dùng cho card grid. */
+    private final Map<Integer, String> itemImageUrls = new HashMap<>();
+    /** Cache category theo itemId — dùng để filter chip + hiển thị badge category trên card. */
+    private final Map<Integer, ItemCategory> itemCategories = new HashMap<>();
+    /** Set itemIds đã fetch (cả thành công lẫn fail) — tránh fetch lặp. */
+    private final java.util.Set<Integer> fetchedItemIds = new java.util.HashSet<>();
+    /** Category filter hiện tại — "ALL" hoặc tên enum (ELECTRONICS/ART/VEHICLE). */
+    private String activeCategory = "ALL";
 
     @FXML
     public void initialize() {
         // Setup header
         lblWelcome.setText("Xin chào, " + conn.getCurrentUsername());
         updateBalance();
+        if (avatarSlot != null) {
+            avatarSlot.getChildren().setAll(AvatarInitials.create(conn.getCurrentUsername(), 36));
+        }
 
         // Setup filter
         cboStatusFilter.getItems().addAll("Tất cả", "OPEN", "RUNNING", "FINISHED", "PAID", "CANCELED");
         cboStatusFilter.setValue("Tất cả");
         cboStatusFilter.setOnAction(e -> loadAuctions());
 
-        // Setup table columns
-        colItem.setCellValueFactory(data -> {
-            int itemId = data.getValue().getItemId();
-            String name = itemNames.get(itemId);
-            return new SimpleStringProperty(name != null ? name : "Item #" + itemId);
-        });
-        colPrice.setCellValueFactory(data -> new SimpleStringProperty(
-                MoneyFormatter.format(data.getValue().getCurrentPrice())));
-        colBids.setCellValueFactory(data -> new SimpleStringProperty(
-                String.valueOf(data.getValue().getBidCount())));
-        colStatus.setCellValueFactory(data -> new SimpleStringProperty(
-                data.getValue().getStatus().name()));
-        if (colStartTime != null) {
-            colStartTime.setCellValueFactory(data -> new SimpleStringProperty(
-                    DateTimeUtil.formatDisplay(data.getValue().getStartTime())));
-        }
-        colEndTime.setCellValueFactory(data -> new SimpleStringProperty(
-                DateTimeUtil.formatDisplay(data.getValue().getEndTime())));
-
-        tableAuctions.setItems(auctionList);
-
-        // Double-click vào row → mở chi tiết
-        tableAuctions.setRowFactory(tv -> {
-            TableRow<Auction> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    openAuctionDetail(row.getItem());
-                }
-            });
-            return row;
-        });
+        // Setup category chips + auction grid (Shopee-style card view)
+        buildCategoryChips();
+        auctionList.addListener((javafx.collections.ListChangeListener<Auction>) c -> rebuildGrid());
 
         // Setup tab "Phiên đã thắng"
         colWinItem.setCellValueFactory(data -> {
@@ -118,6 +114,20 @@ public class DashboardController {
         colWinStatus.setCellValueFactory(data -> new SimpleStringProperty(
                 data.getValue().getStatus().name().equals("FINISHED")
                         ? "Chờ thanh toán" : "Đã thanh toán"));
+        colWinStatus.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                    setText(null);
+                    return;
+                }
+                AuctionStatus s = ((Auction) getTableRow().getItem()).getStatus();
+                setGraphic(StatusBadge.create(s, item));
+                setText(null);
+            }
+        });
         colWinEndTime.setCellValueFactory(data -> new SimpleStringProperty(
                 DateTimeUtil.formatDisplay(data.getValue().getEndTime())));
         tableMyWins.setItems(myWinsList);
@@ -130,7 +140,7 @@ public class DashboardController {
             });
             return row;
         });
-//
+
         // Ẩn nút seller/admin nếu không phải role đó
         String role = conn.getCurrentRole();
         if (btnSellerPanel != null) {
@@ -197,7 +207,13 @@ public class DashboardController {
                         itemNames.putAll(names);
                         auctionList.clear();
                         auctionList.addAll(auctions);
-                        tableAuctions.refresh();
+                        // Lazy fetch image+category cho từng item chưa fetch
+                        for (Auction a : auctions) {
+                            if (!fetchedItemIds.contains(a.getItemId())) {
+                                fetchedItemIds.add(a.getItemId());
+                                fetchItemDetail(a.getItemId());
+                            }
+                        }
                     });
                 }
             } catch (Exception e) {
@@ -265,7 +281,8 @@ public class DashboardController {
      */
     private void openAuctionDetail(Auction auction) {
         AuctionDetailController.setSelectedAuction(auction);
-        SceneManager.getInstance().switchScene("auction_detail.fxml", "Phiên đấu giá #" + auction.getId(), 1000, 700);
+        SceneManager.getInstance().switchScene("auction_detail.fxml", "Phiên đấu giá #" + auction.getId(),
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 
     /**
@@ -283,24 +300,30 @@ public class DashboardController {
     @FXML
     private void handleSellerPanel() {
         cleanupBeforeNavigate();
-        SceneManager.getInstance().switchScene("seller_panel.fxml", "Quản lý sản phẩm", 1100, 750);
+        SceneManager.getInstance().switchScene("seller_panel.fxml", "Quản lý sản phẩm",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 
     @FXML
     private void handleAdminPanel() {
         cleanupBeforeNavigate();
-        SceneManager.getInstance().switchScene("admin_panel.fxml", "Quản trị hệ thống", 1100, 750);
+        SceneManager.getInstance().switchScene("admin_panel.fxml", "Quản trị hệ thống",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 
     @FXML
     private void handleProfile() {
         cleanupBeforeNavigate();
-        SceneManager.getInstance().switchScene("profile.fxml", "Tài khoản", 600, 700);
+        SceneManager.getInstance().switchScene("profile.fxml", "Tài khoản",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 
     @FXML
     private void handleTopUp() {
-        AlertUtil.showInput("Nạp tiền", "Nhập số tiền muốn nạp (VD: 100,000):", "100,000")
+        ModalDialog.input(btnTopUp.getScene().getWindow(),
+                        "Nạp tiền vào ví",
+                        "Nhập số tiền muốn nạp (VNĐ):",
+                        "100,000")
                 .ifPresent(amountStr -> {
                     double amount;
                     try {
@@ -322,7 +345,8 @@ public class DashboardController {
                                 if (resp.isSuccess()) {
                                     conn.setCurrentBalance(resp.getDouble("balance"));
                                     updateBalance();
-                                    AlertUtil.showInfo("Thành công", resp.getMessage());
+                                    ToastUtil.success(lblBalance,
+                                            "💰 Đã nạp " + MoneyFormatter.format(resp.getDouble("amount")));
                                 } else {
                                     AlertUtil.showError("Lỗi", resp.getMessage());
                                 }
@@ -362,9 +386,179 @@ public class DashboardController {
             Platform.runLater(this::loadAuctions);
         } else if (response.getCommand() == CommandType.BALANCE_UPDATE) {
             // Balance vừa thay đổi (refund cọc / payment / nhận tiền seller) → refresh label
+            double oldBalance = conn.getCurrentBalance();
             double newBalance = response.getDouble("balance");
             conn.setCurrentBalance(newBalance);
-            Platform.runLater(this::updateBalance);
+            Platform.runLater(() -> {
+                updateBalance();
+                double delta = newBalance - oldBalance;
+                String prefix = delta >= 0 ? "+" : "";
+                ToastUtil.success(lblBalance,
+                        "💰 Số dư cập nhật: " + prefix + MoneyFormatter.format(delta));
+            });
         }
+    }
+
+    // ================================================
+    // CARD GRID — Shopee-style cho tab "Danh sách phiên đấu giá"
+    // ================================================
+
+    /** Tạo 4 chip filter: Tất cả / Electronics / Art / Vehicle. */
+    private void buildCategoryChips() {
+        if (categoryChipsBox == null) return;
+        categoryChipsBox.getChildren().clear();
+        addChip("ALL", "Tất cả");
+        addChip("ELECTRONICS", "📱 Electronics");
+        addChip("ART", "🎨 Art");
+        addChip("VEHICLE", "🚗 Vehicle");
+    }
+
+    private void addChip(String key, String label) {
+        Button chip = new Button(label);
+        chip.getStyleClass().add("chip");
+        if (activeCategory.equals(key)) chip.getStyleClass().add("chip-active");
+        chip.setOnAction(e -> {
+            activeCategory = key;
+            // Update visual: rebuild chips để chỉ chip mới active
+            buildCategoryChips();
+            rebuildGrid();
+        });
+        categoryChipsBox.getChildren().add(chip);
+    }
+
+    /** Clear grid và build lại card từ auctionList, lọc theo activeCategory. */
+    private void rebuildGrid() {
+        if (gridAuctions == null) return;
+        gridAuctions.getChildren().clear();
+
+        List<Auction> filtered = new java.util.ArrayList<>();
+        for (Auction a : auctionList) {
+            if ("ALL".equals(activeCategory)) {
+                filtered.add(a);
+            } else {
+                ItemCategory cat = itemCategories.get(a.getItemId());
+                if (cat != null && activeCategory.equals(cat.name())) {
+                    filtered.add(a);
+                }
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            VBox empty = new VBox(8);
+            empty.getStyleClass().add("grid-empty-state");
+            empty.setAlignment(Pos.CENTER);
+            Label icon = new Label("📦");
+            icon.getStyleClass().add("empty-state-icon");
+            Label title = new Label("Không có phiên đấu giá nào");
+            title.getStyleClass().add("empty-state-title");
+            Label sub = new Label("Hãy thử đổi bộ lọc hoặc làm mới danh sách");
+            sub.getStyleClass().add("empty-state-subtitle");
+            empty.getChildren().addAll(icon, title, sub);
+            // Span full width via custom node — TilePane sẽ wrap nhưng đặt 1 node lớn cũng OK
+            gridAuctions.getChildren().add(empty);
+            return;
+        }
+
+        for (Auction a : filtered) {
+            gridAuctions.getChildren().add(createAuctionCard(a));
+        }
+    }
+
+    /** Tạo card cho 1 auction: image + name + category + price + status + countdown. */
+    private VBox createAuctionCard(Auction auction) {
+        int itemId = auction.getItemId();
+        String name = itemNames.get(itemId);
+        if (name == null) name = "Item #" + itemId;
+
+        // Image — fit 190x170, preserve ratio (không méo), background placeholder color cho phần trống
+        ImageView img = new ImageView();
+        String url = itemImageUrls.get(itemId);
+        img.setImage(ImageLoader.load(url, 190, 170));
+        img.setFitWidth(190);
+        img.setFitHeight(170);
+        img.setPreserveRatio(true);
+        img.setSmooth(true);
+
+        StackPane imageWrap = new StackPane(img);
+        imageWrap.getStyleClass().add("auction-card-image-wrap");
+        imageWrap.setMinHeight(170);
+        imageWrap.setMaxHeight(170);
+        imageWrap.setPrefHeight(170);
+
+        // Info
+        Label lblName = new Label(name);
+        lblName.getStyleClass().add("auction-card-title");
+        lblName.setWrapText(true);
+        lblName.setMaxHeight(40);
+
+        String categoryText = "—";
+        ItemCategory cat = itemCategories.get(itemId);
+        if (cat != null) {
+            switch (cat) {
+                case ELECTRONICS: categoryText = "📱 Electronics"; break;
+                case ART:         categoryText = "🎨 Art"; break;
+                case VEHICLE:     categoryText = "🚗 Vehicle"; break;
+            }
+        }
+        Label lblCategory = new Label(categoryText);
+        lblCategory.getStyleClass().add("auction-card-category");
+
+        Label lblPrice = new Label(MoneyFormatter.format(auction.getCurrentPrice()));
+        lblPrice.getStyleClass().add("auction-card-price");
+
+        Label statusBadge = StatusBadge.create(auction.getStatus());
+        Label lblBids = new Label(auction.getBidCount() + " lượt");
+        lblBids.getStyleClass().add("caption");
+        Region sp = new Region();
+        HBox.setHgrow(sp, javafx.scene.layout.Priority.ALWAYS);
+        HBox bottomRow = new HBox(8, statusBadge, sp, lblBids);
+        bottomRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox info = new VBox(6, lblName, lblCategory, lblPrice, bottomRow);
+        info.getStyleClass().add("auction-card-info");
+
+        VBox card = new VBox(imageWrap, info);
+        card.getStyleClass().add("auction-card");
+        card.setMaxWidth(190);
+        card.setPrefHeight(290);
+        card.setOnMouseClicked(e -> openAuctionDetail(auction));
+        return card;
+    }
+
+    /** Lazy fetch GET_ITEM cho image + category, cache, rebuild grid khi nhận response. */
+    private void fetchItemDetail(int itemId) {
+        new Thread(() -> {
+            try {
+                Request req = new Request(CommandType.GET_ITEM);
+                req.put("itemId", itemId);
+                Response resp = conn.sendRequest(req);
+                if (resp.isSuccess()) {
+                    String json = resp.getString("item");
+                    if (json != null) {
+                        // Item là abstract → Gson cần handle subclass. Server hiện trả Electronics/Art/Vehicle
+                        // qua factory trong CategoryDetails endpoint. Để đơn giản, parse imageUrl + category
+                        // bằng JsonObject thay vì deserialize full Item.
+                        com.google.gson.JsonObject obj = JsonUtil.getGson()
+                                .fromJson(json, com.google.gson.JsonObject.class);
+                        if (obj != null) {
+                            String imgUrl = obj.has("imageUrl") && !obj.get("imageUrl").isJsonNull()
+                                    ? obj.get("imageUrl").getAsString() : null;
+                            String catStr = obj.has("category") && !obj.get("category").isJsonNull()
+                                    ? obj.get("category").getAsString() : null;
+                            Platform.runLater(() -> {
+                                if (imgUrl != null) itemImageUrls.put(itemId, imgUrl);
+                                if (catStr != null) {
+                                    try { itemCategories.put(itemId, ItemCategory.valueOf(catStr)); }
+                                    catch (Exception ignored) {}
+                                }
+                                rebuildGrid();
+                            });
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // Card sẽ giữ placeholder image — OK
+            }
+        }).start();
     }
 }

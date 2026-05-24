@@ -8,8 +8,10 @@ import com.auction.common.util.DateTimeUtil;
 import com.auction.common.util.JsonUtil;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
+import com.auction.client.util.AvatarInitials;
 import com.auction.client.util.MoneyFormatter;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.ToastUtil;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -17,6 +19,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -43,6 +46,11 @@ public class ProfileController {
     @FXML private TableColumn<WalletTransaction, String> colTxTime;
 
     @FXML private Button btnBack;
+    @FXML private StackPane avatarSlot;
+    @FXML private Label lblStatDeposit;
+    @FXML private Label lblStatWins;
+    @FXML private Label lblStatHold;
+    @FXML private Label lblStatTxCount;
 
     private final ServerConnection conn = ServerConnection.getInstance();
     private final ObservableList<WalletTransaction> txList = FXCollections.observableArrayList();
@@ -53,6 +61,9 @@ public class ProfileController {
         lblUsername.setText(conn.getCurrentUsername());
         lblRole.setText(conn.getCurrentRole());
         lblBalance.setText(MoneyFormatter.format(conn.getCurrentBalance()));
+        if (avatarSlot != null) {
+            avatarSlot.getChildren().setAll(AvatarInitials.create(conn.getCurrentUsername(), 36));
+        }
 
         // Table setup
         colTxType.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getType().name()));
@@ -122,7 +133,7 @@ public class ProfileController {
                 Response resp = conn.sendRequest(req);
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Cập nhật thông tin thành công");
+                        ToastUtil.success(lblBalance, "Cập nhật thông tin thành công");
                     } else {
                         AlertUtil.showError("Lỗi", resp.getMessage());
                     }
@@ -156,7 +167,7 @@ public class ProfileController {
                 Response resp = conn.sendRequest(req);
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đổi mật khẩu thành công");
+                        ToastUtil.success(lblBalance, "Đổi mật khẩu thành công");
                         txtOldPassword.clear();
                         txtNewPassword.clear();
                         txtConfirmNewPassword.clear();
@@ -181,6 +192,7 @@ public class ProfileController {
                     Platform.runLater(() -> {
                         txList.clear();
                         txList.addAll(txs);
+                        updateStats(txs);
                     });
                 }
             } catch (Exception e) {
@@ -189,9 +201,41 @@ public class ProfileController {
         }).start();
     }
 
+    /**
+     * Tính 4 stats từ wallet history client-side.
+     * Tổng nạp (DEPOSIT typical = nạp), Tổng thắng (mô tả chứa "thanh toán"/"Nhận"),
+     * Cọc đang giữ (BID_HOLD - BID_REFUND), Số giao dịch.
+     */
+    private void updateStats(List<WalletTransaction> txs) {
+        double totalDeposit = 0, totalWins = 0, totalHold = 0;
+        for (WalletTransaction tx : txs) {
+            if (tx.getType() == null) continue;
+            switch (tx.getType()) {
+                case DEPOSIT:
+                    totalDeposit += tx.getAmount();
+                    // Phân biệt seller nhận thanh toán (DEPOSIT + description "Nhận thanh toán")
+                    if (tx.getDescription() != null && tx.getDescription().toLowerCase().contains("nhận")) {
+                        totalWins += tx.getAmount();
+                        totalDeposit -= tx.getAmount();
+                    }
+                    break;
+                case BID_HOLD:    totalHold += tx.getAmount(); break;
+                case BID_REFUND:  totalHold -= tx.getAmount(); break;
+                case PAYMENT:     totalWins += tx.getAmount(); break;
+                default: break;
+            }
+        }
+        if (totalHold < 0) totalHold = 0;
+        if (lblStatDeposit != null) lblStatDeposit.setText(MoneyFormatter.format(totalDeposit));
+        if (lblStatWins != null) lblStatWins.setText(MoneyFormatter.format(totalWins));
+        if (lblStatHold != null) lblStatHold.setText(MoneyFormatter.format(totalHold));
+        if (lblStatTxCount != null) lblStatTxCount.setText(String.valueOf(txs.size()));
+    }
+
     @FXML
     private void handleBack() {
         if (realtimeListener != null) conn.removeEventListener(realtimeListener);
-        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard", 1200, 800);
+        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 }

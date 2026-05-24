@@ -67,7 +67,8 @@ public class LoginController {
 
                         // Chuyển tới dashboard
                         SceneManager.getInstance().switchScene(
-                                "dashboard.fxml", "Dashboard", 1200, 800);
+                                "dashboard.fxml", "Dashboard",
+                                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
                     } else {
                         AlertUtil.showError("Đăng nhập thất bại", response.getMessage());
                     }

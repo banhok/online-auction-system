@@ -8,8 +8,14 @@ import com.auction.common.model.Item;
 import com.auction.common.util.JsonUtil;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
+import com.auction.client.util.AvatarInitials;
+import com.auction.client.util.ImageLoader;
+import com.auction.client.util.LoadingOverlay;
+import com.auction.client.util.ModalDialog;
 import com.auction.client.util.MoneyFormatter;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.StatusBadge;
+import com.auction.client.util.ToastUtil;
 import com.google.gson.reflect.TypeToken;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -17,6 +23,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
 import javafx.util.Callback;
 
 import java.time.LocalDate;
@@ -77,6 +85,8 @@ public class SellerPanelController {
     @FXML private TableColumn<Item, Void> colItemAction;
 
     @FXML private Button btnBack;
+    @FXML private StackPane avatarSlot;
+    @FXML private ImageView imgItemPreview;
 
     private final ServerConnection conn = ServerConnection.getInstance();
     private final ObservableList<Auction> myAuctions = FXCollections.observableArrayList();
@@ -86,6 +96,22 @@ public class SellerPanelController {
 
     @FXML
     public void initialize() {
+        // Avatar top bar
+        if (avatarSlot != null) {
+            avatarSlot.getChildren().setAll(AvatarInitials.create(conn.getCurrentUsername(), 36));
+        }
+
+        // Item preview image — initial placeholder + listener khi paste URL
+        if (imgItemPreview != null) {
+            imgItemPreview.setImage(ImageLoader.placeholder());
+            if (txtImageUrl != null) {
+                txtImageUrl.textProperty().addListener((obs, oldVal, newVal) -> {
+                    String url = newVal == null ? "" : newVal.trim();
+                    imgItemPreview.setImage(ImageLoader.load(url, 200, 200));
+                });
+            }
+        }
+
         // Setup category dropdown
         cboCategory.getItems().addAll("ELECTRONICS", "ART", "VEHICLE");
         cboCategory.setValue("ELECTRONICS");
@@ -104,6 +130,20 @@ public class SellerPanelController {
             colAucBids.setCellValueFactory(d -> new SimpleStringProperty(
                     String.valueOf(d.getValue().getBidCount())));
             colAucStatus.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus().name()));
+            colAucStatus.setCellFactory(col -> new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                        setGraphic(null);
+                        setText(null);
+                        return;
+                    }
+                    Auction a = (Auction) getTableRow().getItem();
+                    setGraphic(StatusBadge.create(a.getStatus()));
+                    setText(null);
+                }
+            });
             if (colAucStart != null) {
                 colAucStart.setCellValueFactory(d -> new SimpleStringProperty(
                         com.auction.common.util.DateTimeUtil.formatDisplay(d.getValue().getStartTime())));
@@ -126,6 +166,21 @@ public class SellerPanelController {
             if (colItemStatus != null) {
                 colItemStatus.setCellValueFactory(d -> new SimpleStringProperty(
                         formatItemStatus(itemAuctionStatus.get(d.getValue().getId()))));
+                colItemStatus.setCellFactory(col -> new TableCell<>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (empty || item == null || getTableRow() == null || getTableRow().getItem() == null) {
+                            setGraphic(null);
+                            setText(null);
+                            return;
+                        }
+                        Item it = (Item) getTableRow().getItem();
+                        com.auction.common.model.AuctionStatus s = itemAuctionStatus.get(it.getId());
+                        setGraphic(StatusBadge.create(s, item));
+                        setText(null);
+                    }
+                });
             }
             addDeleteButtonToItemsTable();
             tableMyItems.setItems(myItems);
@@ -247,8 +302,8 @@ public class SellerPanelController {
 
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công",
-                                "Tạo sản phẩm thành công! ID: " + resp.get("itemId"));
+                        ToastUtil.success(btnBack,
+                                "✅ Đã tạo sản phẩm #" + resp.get("itemId"));
                         clearItemForm();
                         loadMyItems();
                     } else {
@@ -337,6 +392,7 @@ public class SellerPanelController {
             return;
         }
 
+        LoadingOverlay overlay = LoadingOverlay.show(txtAuctionStartPrice);
         new Thread(() -> {
             try {
                 Request req = new Request(CommandType.CREATE_AUCTION);
@@ -347,9 +403,10 @@ public class SellerPanelController {
                 Response resp = conn.sendRequest(req);
 
                 Platform.runLater(() -> {
+                    overlay.hide();
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công",
-                                "Tạo phiên đấu giá thành công! ID: " + resp.get("auctionId"));
+                        ToastUtil.success(btnBack,
+                                "🔨 Đã tạo phiên đấu giá #" + resp.get("auctionId"));
                         loadMyAuctions();
                         loadMyItems();
                     } else {
@@ -357,7 +414,10 @@ public class SellerPanelController {
                     }
                 });
             } catch (Exception e) {
-                Platform.runLater(() -> AlertUtil.showError("Lỗi", e.getMessage()));
+                Platform.runLater(() -> {
+                    overlay.hide();
+                    AlertUtil.showError("Lỗi", e.getMessage());
+                });
             }
         }).start();
     }
@@ -478,9 +538,10 @@ public class SellerPanelController {
                 btn.getStyleClass().add("btn-danger");
                 btn.setOnAction(e -> {
                     Auction a = getTableView().getItems().get(getIndex());
-                    boolean ok = AlertUtil.showConfirm(
+                    boolean ok = ModalDialog.confirm(
+                            btn.getScene().getWindow(),
                             "Xác nhận huỷ phiên",
-                            "Huỷ phiên #" + a.getId() + "?\n"
+                            "Huỷ phiên #" + a.getId() + "?\n\n"
                                     + "⚠️ Toàn bộ tiền cọc của bidder sẽ được hoàn ngay lập tức.");
                     if (ok) cancelAuction(a.getId());
                 });
@@ -509,7 +570,7 @@ public class SellerPanelController {
                 Response resp = conn.send(CommandType.CANCEL_AUCTION, "auctionId", auctionId);
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đã huỷ phiên đấu giá + hoàn cọc bidder");
+                        ToastUtil.success(btnBack, "❌ Đã huỷ phiên + hoàn cọc bidder");
                         loadMyAuctions();
                         loadMyItems(); // refresh cột status ở tab Sản phẩm
                     } else {
@@ -534,9 +595,10 @@ public class SellerPanelController {
                 btn.getStyleClass().add("btn-danger");
                 btn.setOnAction(e -> {
                     Item it = getTableView().getItems().get(getIndex());
-                    boolean ok = AlertUtil.showConfirm(
+                    boolean ok = ModalDialog.confirm(
+                            btn.getScene().getWindow(),
                             "Xác nhận xoá",
-                            "Xoá sản phẩm \"" + it.getName() + "\" (#" + it.getId() + ")?\n"
+                            "Xoá sản phẩm \"" + it.getName() + "\" (#" + it.getId() + ")?\n\n"
                                     + "⚠️ Nếu sản phẩm đã có phiên đấu giá, server sẽ từ chối xoá.");
                     if (ok) deleteItem(it.getId());
                 });
@@ -556,7 +618,7 @@ public class SellerPanelController {
                 Response resp = conn.send(CommandType.DELETE_ITEM, "itemId", itemId);
                 Platform.runLater(() -> {
                     if (resp.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đã xoá sản phẩm");
+                        ToastUtil.success(btnBack, "🗑 Đã xoá sản phẩm");
                         loadMyItems();
                     } else {
                         AlertUtil.showError("Lỗi", resp.getMessage());
@@ -581,6 +643,7 @@ public class SellerPanelController {
 
     @FXML
     private void handleBack() {
-        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard", 1200, 800);
+        SceneManager.getInstance().switchScene("dashboard.fxml", "Dashboard",
+                SceneManager.MAIN_WIDTH, SceneManager.MAIN_HEIGHT);
     }
 }

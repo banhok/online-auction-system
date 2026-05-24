@@ -6,6 +6,7 @@ import com.auction.common.dto.Response;
 import com.auction.client.network.ServerConnection;
 import com.auction.client.util.AlertUtil;
 import com.auction.client.util.SceneManager;
+import com.auction.client.util.ToastUtil;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -77,7 +78,7 @@ public class RegisterController {
                 Platform.runLater(() -> {
                     setLoading(false);
                     if (response.isSuccess()) {
-                        AlertUtil.showInfo("Thành công", "Đăng ký thành công! Hãy đăng nhập.");
+                        ToastUtil.success(btnRegister, "Đăng ký thành công! Hãy đăng nhập.");
                         handleBack();
                     } else {
                         AlertUtil.showError("Đăng ký thất bại", response.getMessage());
