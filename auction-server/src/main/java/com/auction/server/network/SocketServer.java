@@ -26,6 +26,8 @@ public class SocketServer {
     private final AuctionEventManager eventManager;
     private ServerSocket serverSocket;
     private ExecutorService threadPool;
+
+    // Cần violatile
     private volatile boolean running = false;
 
     public SocketServer(int port, CommandRouter commandRouter, AuctionEventManager eventManager) {

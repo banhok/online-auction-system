@@ -95,15 +95,24 @@ public class CommandRouter {
                 default:
                     return Response.error(cmd, "Command chưa được hỗ trợ: " + cmd);
             }
+            //Sai mk, chưa đăng nhập, ko có quyền
         } catch (AuthenticationException e) {
             return Response.error(cmd, "AUTH: " + e.getMessage());
+            
+            //Phiên ko tồn tại, ko thấy user
         } catch (NotFoundException e) {
             return Response.error(cmd, "NOT_FOUND: " + e.getMessage());
+            
+            //Logic phiên
         } catch (AuctionException e) {
             // InvalidBidException, InsufficientBalanceException, ...
             return Response.error(cmd, e.getMessage());
+            
+            //Dữ liệu vào sai
         } catch (IllegalArgumentException e) {
             return Response.error(cmd, "VALIDATION: " + e.getMessage());
+            
+            //Lỗi khác
         } catch (Exception e) {
             logger.error("Error handling command: {}", cmd, e);
             return Response.error(cmd, "SERVER ERROR: " + e.getMessage());
