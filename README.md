@@ -88,9 +88,7 @@
 |---|---|
 | **JDK** | Java 17+ ([Eclipse Temurin](https://adoptium.net/) khuyến nghị) |
 | **Maven** | 3.8+ (chỉ cần khi build từ source — chạy fat JAR không cần) |
-| **Hệ điều hành** | Windows 10/11 (fat JAR đang bundle JavaFX cho Windows; Linux/Mac xem [docs/build_jar_guide.md](docs/build_jar_guide.md)) |
-| **RAM** | 512MB trở lên |
-| **Port** | 8888 (server lắng nghe, cần mở firewall nếu chạy nhiều máy) |
+| **Hệ điều hành** | Windows/Mac/Linux |
 
 ---
 
@@ -156,9 +154,9 @@ java -jar auction-client/target/auction-client.jar
 | File | Kích thước | Mô tả |
 |---|---|---|
 | `auction-server/target/auction-server.jar` | ~14 MB | Fat JAR server, đã bundle SQLite + Gson + SLF4J |
-| `auction-client/target/auction-client.jar` | ~11 MB | Fat JAR client, **bundle JavaFX cho cả 4 OS: Windows + Mac Intel + Mac Apple Silicon (M1/M2) + Linux** |
+| `auction-client/target/auction-client.jar` | ~11 MB | Fat JAR client, **bundle JavaFX cho cả các OS khác nhau** |
 
-> ✅ **Chạy được mọi OS không cần rebuild**: JAR client đã bundle native libraries của JavaFX cho 4 platform (Windows x64, macOS Intel, macOS Apple Silicon ARM64, Linux x64). JVM tự pick đúng native theo OS đang chạy. Chi tiết kỹ thuật: [docs/build_jar_guide.md](docs/build_jar_guide.md).
+> ✅ **Chạy được mọi OS không cần rebuild**: JAR client đã bundle native libraries của JavaFX cho 4 platform (Windows x64, macOS Intel, macOS Apple Silicon ARM64, Linux x64). JVM tự pick đúng native theo OS đang chạy. 
 
 ### Chạy test
 
@@ -206,8 +204,6 @@ Client → Request{command, payload, token}
        ⤴ Socket
        ⤴ Client
 ```
-
-Sơ đồ chi tiết: [docs/architecture_tree.md](docs/architecture_tree.md).
 
 ### Trạng thái phiên đấu giá
 
@@ -318,8 +314,6 @@ online-auction-system/
 | **Observer** | `AuctionEventManager` + `AuctionEventListener` | Push realtime event cho client subscribed (không polling) |
 | **Strategy** | `EndStrategy` — `NormalEndStrategy` / `AntiSnipeEndStrategy` | Hành vi kết thúc phiên swap được |
 | **Command** | `CommandType` enum + `CommandRouter` | Dispatch request không if-else dài |
-| **DAO** | `*DAO.java` (6 class) | Tách JDBC khỏi business logic |
-| **MVC** | Client (FXML + Controller), Server (Controller→Service→DAO) | Phân tầng rõ ràng |
 
 ---
 
@@ -370,9 +364,7 @@ Mỗi push lên `main`/`develop` hoặc PR vào `main`, GitHub Actions tự đ�
 |---|---|---|
 | 📑 **Báo cáo PDF** | Báo cáo Bài tập lớn | [https://drive.google.com/file/d/1DCB2sM8YqZHSwF2-ELECdC7DHfxLD3L3/view?usp=drive_link] |
 | 🎥 **Video demo** | Demo 3 phút: login, realtime bid, concurrent race, anti-snipe, payment, admin | [Upcomming] |
-| 📐 **Sơ đồ kiến trúc** | Cây thư mục + flow request/response chi tiết | [Upcomming] |
-| 📂 **Cấu trúc module** | Maven multi-module structure | [Upcomming] |
-
+| 📐 **UML class diagram** | Biểu đồ lớp | [Upcomming] |
 
 ---
 
@@ -380,9 +372,9 @@ Mỗi push lên `main`/`develop` hoặc PR vào `main`, GitHub Actions tự đ�
 
 | Vai trò | Phụ trách | Tài liệu chi tiết |
 |---|---|---|
-| **A — Backend Engineer** | DAO (6), Service (5), Strategy, Factory, Observer, Scheduler, 64 unit tests | 
-| **B — Frontend Engineer** | 7 Controller, 7 FXML, CSS Dark Cactus theme, Util client (Toast, Modal, Avatar...), Realtime listener | 
-| **C — Architect/Common** | `auction-common` (Model/DTO/Enum/Exception/Util), Socket+JSON protocol, CommandRouter, Build & CI, Docs |
+| **Nguyễn Trần Đức Minh — Backend** | DAO (6), Service (5), Strategy, Factory, Observer, Scheduler, 64 unit tests | 
+| **Phan Minh Quang — Frontend** | 7 Controller, 7 FXML, CSS Dark Cactus theme, Util client (Toast, Modal, Avatar...), Realtime listener | 
+| **Đỗ Văn Nam — Architect/Common** | `auction-common` (Model/DTO/Enum/Exception/Util), Socket+JSON protocol, CommandRouter, Build & CI, Docs |
 
 ---
 
