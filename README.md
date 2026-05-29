@@ -368,11 +368,11 @@ Mỗi push lên `main`/`develop` hoặc PR vào `main`, GitHub Actions tự đ�
 
 | Tài liệu | Mô tả | Vị trí |
 |---|---|---|
-| 📑 **Báo cáo PDF** | Báo cáo chính thức 5 trang (mục tiêu, kiến trúc, chức năng, giải pháp, kết luận) | [Upcomming] |
+| 📑 **Báo cáo PDF** | Báo cáo Bài tập lớn | [https://drive.google.com/file/d/1DCB2sM8YqZHSwF2-ELECdC7DHfxLD3L3/view?usp=drive_link] |
 | 🎥 **Video demo** | Demo 3 phút: login, realtime bid, concurrent race, anti-snipe, payment, admin | [Upcomming] |
 | 📐 **Sơ đồ kiến trúc** | Cây thư mục + flow request/response chi tiết | [Upcomming] |
 | 📂 **Cấu trúc module** | Maven multi-module structure | [Upcomming] |
-| 🔧 **Hướng dẫn build JAR** | Cách `maven-shade-plugin` đóng gói + troubleshooting | [Upcomming] |
+
 
 ---
 
