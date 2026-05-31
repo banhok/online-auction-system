@@ -2,7 +2,7 @@
 
 # 🏷️ Online Auction System
 
-**Hệ thống đấu giá trực tuyến realtime — Bài tập lớn Lập trình nâng cao (UET.CS2043)**
+**Hệ thống đấu giá trực tuyến — Bài tập lớn Lập trình nâng cao**
 
 [![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/17/)
 [![JavaFX](https://img.shields.io/badge/JavaFX-21-blue?logo=java&logoColor=white)](https://openjfx.io/)
@@ -84,7 +84,7 @@
 
 ### Yêu cầu môi trường
 
-| Yêu cầu | Mức tối thiểu |
+| Yêu cầu | Phiên bản |
 |---|---|
 | **JDK** | Java 17+ ([Eclipse Temurin](https://adoptium.net/) khuyến nghị) |
 | **Maven** | 3.8+ (chỉ cần khi build từ source — chạy fat JAR không cần) |
@@ -154,9 +154,7 @@ java -jar auction-client/target/auction-client.jar
 | File | Kích thước | Mô tả |
 |---|---|---|
 | `auction-server/target/auction-server.jar` | ~14 MB | Fat JAR server, đã bundle SQLite + Gson + SLF4J |
-| `auction-client/target/auction-client.jar` | ~11 MB | Fat JAR client, **bundle JavaFX cho cả các OS khác nhau** |
-
-> ✅ **Chạy được mọi OS không cần rebuild**: JAR client đã bundle native libraries của JavaFX cho 4 platform (Windows x64, macOS Intel, macOS Apple Silicon ARM64, Linux x64). JVM tự pick đúng native theo OS đang chạy. 
+| `auction-client/target/auction-client.jar` | ~11 MB | Fat JAR client, **hỗ trợ các OS khác nhau** |
 
 ### Chạy test
 
@@ -185,9 +183,7 @@ Schema sẽ tự tạo lại lần chạy server kế tiếp.
 
 ### Tổng quan
 
-Hệ thống gồm **3 module Maven** giao tiếp qua Socket + JSON, single source of truth ở SQLite phía server:
-
-<!-- 📌 DÁN ẢNH SƠ ĐỒ KIẾN TRÚC TẠI ĐÂY (xuất từ draw.io) -->
+Hệ thống gồm **3 module Maven** giao tiếp qua Socket + JSON, single source of truth ở SQLite phía server
 
 ### Luồng request/response
 
@@ -362,16 +358,16 @@ Mỗi push lên `main`/`develop` hoặc PR vào `main`, GitHub Actions tự đ�
 
 | Tài liệu | Mô tả | Vị trí |
 |---|---|---|
-| 📑 **Báo cáo PDF** | Báo cáo Bài tập lớn | [https://drive.google.com/file/d/1DCB2sM8YqZHSwF2-ELECdC7DHfxLD3L3/view?usp=drive_link] |
+| 📑 **Báo cáo PDF** | Báo cáo Bài tập lớn | https://drive.google.com/file/d/1DCB2sM8YqZHSwF2-ELECdC7DHfxLD3L3/view?usp=drive_link |
 | 🎥 **Video demo** | Demo 3 phút: login, realtime bid, concurrent race, anti-snipe, payment, admin | [Upcomming] |
-| 📐 **UML class diagram** | Biểu đồ lớp | [Upcomming] |
+| 📐 **UML class diagram** | Biểu đồ lớp | https://drive.google.com/file/d/1-IwDXq9C_3PR4fK8EekuGWHpqJreWZBe/view?usp=drive_link |
 
 ---
 
 ## 👥 Phân công nhóm
 
-| Vai trò | Phụ trách | Tài liệu chi tiết |
-|---|---|---|
+| Vai trò | Phụ trách | 
+|---|---|
 | **Nguyễn Trần Đức Minh — Backend** | DAO (6), Service (5), Strategy, Factory, Observer, Scheduler, 64 unit tests | 
 | **Phan Minh Quang — Frontend** | 7 Controller, 7 FXML, CSS Dark Cactus theme, Util client (Toast, Modal, Avatar...), Realtime listener | 
 | **Đỗ Văn Nam — Architect/Common** | `auction-common` (Model/DTO/Enum/Exception/Util), Socket+JSON protocol, CommandRouter, Build & CI, Docs |
