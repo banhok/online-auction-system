@@ -21,17 +21,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Verify Java version
-        run: |
-          java -version
-          mvn -version
-
       - name: Build project
-        run: mvn clean compile -B -DskipTests -Dmaven.compiler.source=17 -Dmaven.compiler.target=17
+        run: mvn clean compile -B
 
-      - name: Run tests
-        run: mvn test -B
-        continue-on-error: true
+      - name: Run tests + verify coverage
+        run: mvn verify -B
 
       - name: Package
         run: mvn package -DskipTests -B

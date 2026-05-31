@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.LoginController"
+      alignment="CENTER" spacing="20" styleClass="login-container">
+    <padding><Insets top="40" right="50" bottom="40" left="50"/></padding>
+
+    <!-- Logo / Title -->
+    <Label text="🔨 AuctionHub" styleClass="app-title"/>
+    <Label text="Đấu giá minh bạch — Mua bán nhanh chóng" styleClass="app-subtitle"/>
+
+    <Region prefHeight="20"/>
+
+    <!-- Form -->
+    <VBox spacing="12" alignment="CENTER" maxWidth="320">
+        <Label text="Tên đăng nhập" styleClass="form-label"/>
+        <TextField fx:id="txtUsername" promptText="Nhập username" styleClass="form-input"/>
+
+        <Label text="Mật khẩu" styleClass="form-label"/>
+        <PasswordField fx:id="txtPassword" promptText="Nhập mật khẩu" styleClass="form-input"
+                       onAction="#handleLogin"/>
+
+        <Region prefHeight="5"/>
+
+        <Button fx:id="btnLogin" text="Đăng nhập" onAction="#handleLogin"
+                styleClass="btn-primary" maxWidth="Infinity"/>
+
+        <Button fx:id="btnRegister" text="Chưa có tài khoản? Đăng ký"
+                onAction="#handleGoToRegister" styleClass="btn-link" maxWidth="Infinity"/>
+
+        <ProgressIndicator fx:id="progressIndicator" prefWidth="30" prefHeight="30" visible="false"/>
+        <Label fx:id="lblStatus" styleClass="status-label"/>
+    </VBox>
+</VBox>

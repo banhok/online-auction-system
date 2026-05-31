@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.DashboardController"
+            styleClass="dashboard-container">
+
+    <!-- TOP BAR -->
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+
+            <Label text="🔨 AuctionHub" styleClass="app-logo"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <StackPane fx:id="avatarSlot"/>
+            <Label fx:id="lblWelcome" text="Xin chào" styleClass="welcome-label"/>
+            <Label fx:id="lblBalance" text="Số dư: 0 VNĐ" styleClass="balance-label"/>
+
+            <Button fx:id="btnTopUp" text="💰 Nạp tiền" onAction="#handleTopUp" styleClass="btn-success"/>
+            <Button fx:id="btnProfile" text="👤 Tài khoản" onAction="#handleProfile" styleClass="btn-secondary"/>
+            <Button fx:id="btnSellerPanel" text="📦 Quản lý SP" onAction="#handleSellerPanel" styleClass="btn-secondary"/>
+            <Button fx:id="btnAdminPanel" text="⚙️ Admin" onAction="#handleAdminPanel" styleClass="btn-secondary"/>
+            <Button fx:id="btnLogout" text="🚪 Đăng xuất" onAction="#handleLogout" styleClass="btn-danger"/>
+        </HBox>
+    </top>
+
+    <!-- CENTER -->
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <!-- TAB 1: Tất cả phiên đấu giá (Card grid Shopee-style) -->
+                <Tab text="📋 Danh sách phiên đấu giá">
+                    <VBox spacing="15">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                        <!-- Search + Filter -->
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <TextField fx:id="txtSearch" promptText="🔍 Tìm kiếm sản phẩm..." prefWidth="300"
+                                       styleClass="form-input" onAction="#handleSearch"/>
+                            <ComboBox fx:id="cboStatusFilter" prefWidth="150" styleClass="form-input"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnRefresh" text="🔄 Làm mới" onAction="#loadAuctions" styleClass="btn-secondary"/>
+                        </HBox>
+
+                        <!-- Category chips -->
+                        <HBox fx:id="categoryChipsBox" spacing="10" alignment="CENTER_LEFT"/>
+
+                        <!-- Card grid -->
+                        <ScrollPane fx:id="scrollAuctions" VBox.vgrow="ALWAYS" fitToWidth="true"
+                                    styleClass="auction-scroll" hbarPolicy="NEVER">
+                            <TilePane fx:id="gridAuctions" hgap="10" vgap="12"
+                                      prefTileWidth="190" prefTileHeight="290"
+                                      tileAlignment="TOP_LEFT">
+                                <padding><Insets top="4" right="4" bottom="4" left="4"/></padding>
+                            </TilePane>
+                        </ScrollPane>
+
+                        <Label fx:id="lblEmptyHint" text="💡 Click vào sản phẩm để xem chi tiết và đặt giá" styleClass="hint-label"/>
+                    </VBox>
+                </Tab>
+
+                <!-- TAB 2: Phiên đã thắng -->
+                <Tab text="🏆 Phiên đã thắng">
+                    <VBox spacing="15">
+                        <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+                        <HBox spacing="10" alignment="CENTER_LEFT">
+                            <Button fx:id="btnRefreshWins" text="🔄 Làm mới" onAction="#loadMyWins" styleClass="btn-secondary"/>
+                        </HBox>
+
+                        <TableView fx:id="tableMyWins" VBox.vgrow="ALWAYS" styleClass="auction-table">
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                            <columns>
+                                <TableColumn fx:id="colWinItem" text="Sản phẩm" prefWidth="260"/>
+                                <TableColumn fx:id="colWinPrice" text="Giá thắng" prefWidth="160"/>
+                                <TableColumn fx:id="colWinStatus" text="Trạng thái" prefWidth="160"/>
+                                <TableColumn fx:id="colWinEndTime" text="Kết thúc lúc" prefWidth="200"/>
+                            </columns>
+                            <placeholder>
+                                <VBox alignment="CENTER" spacing="8" styleClass="empty-state">
+                                    <Label text="🏆" styleClass="empty-state-icon"/>
+                                    <Label text="Bạn chưa thắng phiên nào" styleClass="empty-state-title"/>
+                                    <Label text="Hãy tham gia đặt giá và trở thành người chiến thắng" styleClass="empty-state-subtitle"/>
+                                </VBox>
+                            </placeholder>
+                        </TableView>
+
+                        <Label text="💡 Double-click vào phiên đã thắng (FINISHED) để mở và thanh toán" styleClass="hint-label"/>
+                    </VBox>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>

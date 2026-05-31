@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.AdminPanelController"
+            styleClass="dashboard-container">
+
+    <top>
+        <HBox spacing="15" alignment="CENTER_LEFT" styleClass="top-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+            <Button fx:id="btnBack" text="← Quay lại" onAction="#handleBack" styleClass="btn-secondary"/>
+            <Label text="🔨 AuctionHub" styleClass="app-logo"/>
+            <Label text="·" styleClass="text-muted"/>
+            <Label text="⚙️ Quản trị hệ thống" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lblTotalUsers" text="Tổng: 0 người dùng" styleClass="balance-label"/>
+            <StackPane fx:id="avatarSlot"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="15">
+            <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+            <HBox spacing="10">
+                <Button fx:id="btnRefresh" text="🔄 Làm mới" onAction="#loadUsers" styleClass="btn-secondary"/>
+                <Button fx:id="btnDeleteUser" text="🗑 Xóa user đã chọn" onAction="#handleDeleteUser" styleClass="btn-danger"/>
+            </HBox>
+
+            <TableView fx:id="tableUsers" VBox.vgrow="ALWAYS" styleClass="auction-table">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+                <columns>
+                    <TableColumn fx:id="colUserId" text="ID" prefWidth="60"/>
+                    <TableColumn fx:id="colUsername" text="Username" prefWidth="130"/>
+                    <TableColumn fx:id="colFullName" text="Họ tên" prefWidth="180"/>
+                    <TableColumn fx:id="colEmail" text="Email" prefWidth="200"/>
+                    <TableColumn fx:id="colRole" text="Vai trò" prefWidth="100"/>
+                    <TableColumn fx:id="colBalance" text="Số dư" prefWidth="130"/>
+                </columns>
+                <placeholder>
+                    <VBox alignment="CENTER" spacing="8" styleClass="empty-state">
+                        <Label text="👥" styleClass="empty-state-icon"/>
+                        <Label text="Chưa có người dùng nào" styleClass="empty-state-title"/>
+                    </VBox>
+                </placeholder>
+            </TableView>
+        </VBox>
+    </center>
+</BorderPane>

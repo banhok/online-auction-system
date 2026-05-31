@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns:fx="http://javafx.com/fxml" fx:controller="com.auction.client.controller.RegisterController"
+      alignment="CENTER" spacing="15" styleClass="login-container">
+    <padding><Insets top="30" right="50" bottom="30" left="50"/></padding>
+
+    <Label text="🔨 AuctionHub" styleClass="app-title"/>
+    <Label text="Đăng ký tài khoản mới" styleClass="app-subtitle"/>
+
+    <VBox spacing="10" alignment="CENTER" maxWidth="350">
+        <Label text="Tên đăng nhập" styleClass="form-label"/>
+        <TextField fx:id="txtUsername" promptText="Nhập username" styleClass="form-input"/>
+
+        <Label text="Họ tên" styleClass="form-label"/>
+        <TextField fx:id="txtFullName" promptText="Nhập họ tên đầy đủ" styleClass="form-input"/>
+
+        <Label text="Email" styleClass="form-label"/>
+        <TextField fx:id="txtEmail" promptText="Nhập email" styleClass="form-input"/>
+
+        <Label text="Vai trò" styleClass="form-label"/>
+        <ComboBox fx:id="cboRole" maxWidth="Infinity" styleClass="form-input"/>
+
+        <Label text="Mật khẩu" styleClass="form-label"/>
+        <PasswordField fx:id="txtPassword" promptText="Tối thiểu 6 ký tự" styleClass="form-input"/>
+
+        <Label text="Xác nhận mật khẩu" styleClass="form-label"/>
+        <PasswordField fx:id="txtConfirmPassword" promptText="Nhập lại mật khẩu" styleClass="form-input"/>
+
+        <Region prefHeight="5"/>
+
+        <Button fx:id="btnRegister" text="Đăng ký" onAction="#handleRegister"
+                styleClass="btn-primary" maxWidth="Infinity"/>
+
+        <Button fx:id="btnBack" text="← Quay lại đăng nhập" onAction="#handleBack"
+                styleClass="btn-link" maxWidth="Infinity"/>
+
+        <ProgressIndicator fx:id="progressIndicator" prefWidth="30" prefHeight="30" visible="false"/>
+    </VBox>
+</VBox>
