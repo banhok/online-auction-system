@@ -359,7 +359,7 @@ Mỗi push lên `main`/`develop` hoặc PR vào `main`, GitHub Actions tự đ�
 | Tài liệu | Mô tả | Vị trí |
 |---|---|---|
 | 📑 **Báo cáo PDF** | Báo cáo Bài tập lớn | https://drive.google.com/file/d/1DCB2sM8YqZHSwF2-ELECdC7DHfxLD3L3/view?usp=drive_link |
-| 🎥 **Video demo** | Demo 3 phút: login, realtime bid, concurrent race, anti-snipe, payment, admin | [Upcomming] |
+| 🎥 **Video demo** | Demo 3 phút: login, realtime bid, anti-snipe, payment, admin | https://drive.google.com/file/d/1eGA2RUekSSkyTWsW-HB9oS9sHSTmPh1v/view?fbclid=IwY2xjawSJIfVleHRuA2FlbQIxMQBzcnRjBmFwcF9pZAEwAAEedjp-B6ZPzp3R3YAEofhWApR2zDnMKeInHw2czTuJRTNbcNelWBzazYL2L70_aem_l91zDr-xnycww9yf6VQLKQ |
 | 📐 **UML class diagram** | Biểu đồ lớp | https://drive.google.com/file/d/1-IwDXq9C_3PR4fK8EekuGWHpqJreWZBe/view?usp=drive_link |
 
 ---
